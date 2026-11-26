@@ -1,0 +1,2236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infrastructure as Code Practice Lab</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --text:#1d2330; --muted:#5d6678; --line:#e1e5ec;
+  --accent:#0f6cbd; --accent-soft:#e6f0fa; --ok:#127a3c; --ok-soft:#e5f5eb; --bad:#b42318; --bad-soft:#fdecea;
+  --warn:#a35200; --warn-soft:#fdf1e3;
+  --code-bg:#0f1720; --code-text:#d6dde8;
+  --k:#7cc4ff; --s:#f2b880; --c:#7d8a9c; --d:#d7a6ff; --n:#9fe3a8; --t:#6fd6c9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --panel:#161b22; --text:#e3e8ef; --muted:#9aa4b2; --line:#2a313c;
+    --accent:#4ea1f3; --accent-soft:#16283c; --ok:#4cc27a; --ok-soft:#13281c; --bad:#ff7b72; --bad-soft:#2d1615;
+    --warn:#f0b450; --warn-soft:#2b2112;
+    --code-bg:#0a0d12;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161b22; --text:#e3e8ef; --muted:#9aa4b2; --line:#2a313c;
+  --accent:#4ea1f3; --accent-soft:#16283c; --ok:#4cc27a; --ok-soft:#13281c; --bad:#ff7b72; --bad-soft:#2d1615;
+  --warn:#f0b450; --warn-soft:#2b2112;
+  --code-bg:#0a0d12;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+code,pre,textarea{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace}
+.app{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+aside h1{font-size:18px;margin:0 8px 4px}
+aside .sub{color:var(--muted);font-size:13px;margin:0 8px 14px}
+.progress{height:6px;background:var(--line);border-radius:4px;margin:0 8px 6px;overflow:hidden}
+.progress>div{height:100%;background:var(--ok);width:0;transition:width .3s}
+.ptext{font-size:12px;color:var(--muted);margin:0 8px 14px}
+nav button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--text);
+  padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+nav button:hover{background:var(--accent-soft)}
+nav button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav .num{flex:0 0 24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted)}
+nav button.done .num{background:var(--ok);border-color:var(--ok);color:#fff}
+nav .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-weight:400}
+nav .group{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 10px 4px}
+.sidefoot{margin:18px 8px 0;display:grid;gap:10px;justify-items:start}
+.sidefoot a{font-size:13px;color:var(--accent)}
+.theme{font-size:13px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 10px;cursor:pointer}
+main{padding:32px 40px 80px;max-width:980px;width:100%}
+.tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-soft);padding:2px 10px;border-radius:20px;margin-bottom:8px}
+h2{font-size:28px;margin:0 0 8px}
+h3{font-size:19px;margin:28px 0 8px}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:17px}
+:not(pre)>code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:.9em;overflow-wrap:anywhere}
+.codewrap{position:relative;margin:12px 0}
+pre{background:var(--code-bg);color:var(--code-text);padding:16px 18px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;margin:0}
+.file{font-size:12px;color:var(--muted);margin:12px 0 -6px;font-family:Consolas,monospace}
+.copy{position:absolute;top:8px;right:8px;font-size:12px;background:#ffffff1a;color:#cfd8e3;border:0;border-radius:6px;padding:4px 9px;cursor:pointer}
+.copy:hover{background:#ffffff33}
+.tk{color:var(--k)} .ts{color:var(--s)} .tc{color:var(--c);font-style:italic} .td{color:var(--d)} .tn{color:var(--n)} .tt{color:var(--t)}
+.tdash{color:var(--c)}
+ul.tips,ol.tips{padding-left:20px} .tips li{margin:4px 0}
+table.ref{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+table.ref th,table.ref td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+table.ref th{background:var(--accent-soft);font-weight:600}
+.tablewrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0;font-size:15px}
+.note.exam{border-left-color:var(--warn);background:var(--warn-soft)}
+.exercise{margin-top:30px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+.exercise h3{margin-top:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.exercise h3 .kind{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 10px}
+.exercise h3 .badge{font-size:12px;background:var(--ok);color:#fff;border-radius:20px;padding:2px 10px;display:none}
+.exercise.solved h3 .badge{display:inline-block}
+.exercise.solved{border-color:var(--ok)}
+textarea{width:100%;min-height:220px;background:var(--code-bg);color:var(--code-text);border:1px solid var(--line);border-radius:10px;
+  padding:14px;font-size:14px;line-height:1.55;resize:vertical;tab-size:2;outline:none;white-space:pre;overflow:auto}
+textarea.short{min-height:120px;white-space:pre-wrap}
+textarea:focus{border-color:var(--accent)}
+.edhelp{font-size:12px;color:var(--muted);margin:4px 0 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.small{padding:2px 9px;font-size:13px}
+.results{list-style:none;padding:0;margin:10px 0}
+.results li{padding:6px 12px;border-radius:7px;margin:4px 0;font-size:14px}
+.results li.pass{background:var(--ok-soft);color:var(--ok)}
+.results li.fail{background:var(--bad-soft);color:var(--bad)}
+.results li .sub{display:block;font-size:13px;margin:2px 0 0 18px;opacity:.9}
+.hint{display:none;background:var(--accent-soft);padding:10px 14px;border-radius:8px;font-size:15px;margin:8px 0}
+.why{display:none;border-left:3px solid var(--ok);background:var(--ok-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:15px}
+.solution{display:none;margin:10px 0}
+.solution .solhead{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 6px}
+/* choice */
+.opts{display:grid;gap:8px;margin:12px 0}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--bg)}
+.opt:hover{border-color:var(--accent)}
+.opt input{margin-top:5px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* order */
+.order{list-style:none;padding:0;margin:12px 0;display:grid;gap:6px}
+.order li{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.order li .pos{flex:0 0 24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:600}
+.order li .txt{flex:1}
+.order li .mv{display:flex;gap:4px}
+.order li.right{border-color:var(--ok);background:var(--ok-soft)}
+.order li.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* match */
+.match{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px}
+.match td{border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:middle}
+.match td:first-child{width:58%}
+.match select{width:100%;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px}
+.match tr.right td{background:var(--ok-soft)}
+.match tr.wrong td{background:var(--bad-soft)}
+/* fill */
+.fill{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;line-height:2.3}
+.fill.mono{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-size:14px;white-space:pre-wrap;line-height:2.2}
+.fill input{font:inherit;font-size:14px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);min-width:90px}
+.fill input.right{border-color:var(--ok);background:var(--ok-soft)}
+.fill input.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* lines */
+.lines{background:var(--code-bg);border-radius:10px;padding:8px 0;margin:12px 0;overflow:auto}
+.lines .ln{display:flex;gap:12px;padding:2px 14px;cursor:pointer;color:var(--code-text);font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-size:14px;white-space:pre;border-left:3px solid transparent}
+.lines .ln:hover{background:#ffffff12}
+.lines .ln .no{color:var(--c);user-select:none;min-width:20px;text-align:right}
+.lines .ln.sel{background:#f2b88026;border-left-color:var(--s)}
+.lines .ln.right{background:#4cc27a2e;border-left-color:var(--n)}
+.lines .ln.wrong{background:#ff7b7230;border-left-color:#ff7b72}
+.lines.prose .ln{font-family:inherit;white-space:normal}
+.navfoot{display:flex;justify-content:space-between;margin-top:30px}
+.menu{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  aside{position:fixed;inset:0 30% 0 0;z-index:5;transform:translateX(-105%);transition:transform .2s;height:100vh}
+  aside.open{transform:none;box-shadow:0 0 40px #0006}
+  main{padding:16px 16px 60px}
+  .menu{display:inline-block;margin-bottom:12px}
+  h2{font-size:23px}
+  .match td{display:block;width:100% !important;border:0;padding:4px 6px}
+  .match tr{display:block;border-bottom:1px solid var(--line);padding:6px 0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="side">
+    <h1>IaC Practice Lab</h1>
+    <p class="sub">AZ-400 · 3.7 Infrastructure as code</p>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="ptext" id="ptext"></p>
+    <nav id="nav"></nav>
+    <div class="sidefoot">
+      <button class="theme" id="themeBtn">Toggle theme</button>
+      <button class="theme" id="resetAllBtn">Reset progress</button>
+      <a href="../bicep-tutorial/index.html">Open the Bicep Practice Lab</a>
+      <a href="../bicep-quiz/index.html">Open the Bicep quiz</a>
+      <a href="../azure-pipelines-tutorial/index.html">Open the Azure Pipelines Practice Lab</a>
+    </div>
+  </aside>
+  <main>
+    <button class="btn menu" id="menuBtn">☰ Modules</button>
+    <div id="content"></div>
+  </main>
+</div>
+
+<script>
+/* ===================================================================
+   MODULE DATA
+   Exercise types (all share: id, title, q, hint, why):
+     mc     options[], answer: index
+     multi  options[], answer: [indexes]           (select all that apply)
+     order  items[] in the CORRECT order (shown shuffled)
+     match  rows: [[left html, correct choice]], choices[]
+     fill   tpl with [[0]], [[1]]… blanks, blanks: [[accepted…]]  (first = shown in solution)
+     lines  code: [lines], answer: [line indexes]  (click the faulty lines)
+     text   lang: "yaml" | "json" | "sh" | "bicep" | "hcl" | "ps", starter, checks: [{l, t: api => bool}], solution
+            yaml → api is the YAML query api (h, item, count, first, src)
+            json → api is { src, lines, json }
+            other → api is { src, lines, cmds, run(prefix, {"--flag|-f": regex|string|null|false}) }
+   =================================================================== */
+const MODULES = [
+/* ================================================================ 1 */
+{
+  group:"Foundations",
+  title:"Configuration management concepts",
+  tag:"declarative · imperative · idempotency · drift · immutable",
+  intro:`Infrastructure as code (IaC) means describing infrastructure in versioned files and letting a tool make reality match them. Four ideas come up again and again on the exam: <b>declarative vs. imperative</b>, <b>idempotency</b>, <b>configuration drift</b> and <b>mutable vs. immutable</b> infrastructure.`,
+  sections:[
+    {h:"Declarative vs. imperative", after:`<div class="tablewrap"><table class="ref">
+<tr><th></th><th>Declarative ("what")</th><th>Imperative ("how")</th></tr>
+<tr><td>You write</td><td>The desired end state: "a storage account named X with SKU Standard_LRS exists"</td><td>The steps: "create the account, then set the SKU, then add a container"</td></tr>
+<tr><td>The tool</td><td>Compares desired and actual state and works out the changes</td><td>Runs the commands in order; you handle "already exists" yourself</td></tr>
+<tr><td>Examples</td><td>ARM templates, Bicep, Terraform, PowerShell DSC, Machine Configuration</td><td>Azure CLI or Azure PowerShell scripts, Bash</td></tr>
+</table></div>
+<p>Tools like Ansible sit in between: a playbook is an ordered list of tasks, but most modules describe a state (<code>state: present</code>) and are idempotent.</p>`},
+    {h:"Idempotency", p:`An operation is <b>idempotent</b> when running it once or many times gives the same result. Deploying the same Bicep file twice leaves the resource group unchanged the second time. A script that runs <code>az group create</code> and then <code>az vm create</code> may fail or create duplicates on the second run unless you add your own existence checks.`},
+    {h:"Configuration drift", p:`<b>Drift</b> is the gap between the state described in code and the real state, usually caused by manual "quick fixes" in the portal, hotfixes on a server, or another tool changing the same resource. You handle it in three steps:`,
+     lang:"text", code:`Prevent   only the pipeline's identity may change production (RBAC), deployment stack deny settings,
+          Azure Policy deny rules, changes go through pull requests
+Detect    Bicep/ARM what-if, terraform plan, Machine Configuration (Audit),
+          Automation State Configuration compliance reports, Azure Policy compliance
+Correct   redeploy from source control, Machine Configuration ApplyAndAutoCorrect,
+          DSC ApplyAndAutoCorrect`},
+    {h:"Mutable vs. immutable infrastructure", p:`<b>Mutable</b>: servers are updated in place (patch, reconfigure). Over time each one becomes a unique "snowflake". <b>Immutable</b>: you never change a running server; you build a new image or container, deploy new instances and throw the old ones away. Immutable infrastructure removes drift on the instances and makes rollback simple (redeploy the previous image), at the cost of an image build pipeline.`},
+    {h:"Provisioning vs. configuration management", lang:"text", code:`Provisioning (create Azure resources)       ARM, Bicep, Terraform, Azure CLI scripts
+Configuration management (inside the OS)    PowerShell DSC, Azure Automation State Configuration,
+                                            Azure Machine Configuration, Ansible, Chef, Puppet`}
+  ],
+  tip:`"Run it again safely" = <b>idempotent</b>. "Someone changed it in the portal" = <b>drift</b>. "Never patch servers, replace them" = <b>immutable</b>. When the question says "desired state", think declarative tools: Bicep/ARM for resources, DSC or Machine Configuration for settings inside machines.`,
+  exercises:[
+    {id:"cm1", type:"match", title:"Declarative or imperative?",
+     q:`Classify each approach.`,
+     choices:["Declarative","Imperative"],
+     rows:[
+       ["A Bicep file that lists a virtual network and two subnets","Declarative"],
+       ["A Bash script: <code>az network vnet create …</code> followed by <code>az network vnet subnet create …</code>","Imperative"],
+       ["A Terraform configuration with an <code>azurerm_storage_account</code> resource","Declarative"],
+       ["A PowerShell DSC configuration stating that IIS must be <code>Present</code>","Declarative"],
+       ["An Azure PowerShell script that loops over VMs and calls <code>Stop-AzVM</code>","Imperative"],
+       ["An ARM JSON template with a <code>resources</code> array","Declarative"]
+     ],
+     hint:`Does the file describe the end state, or the sequence of commands to run?`,
+     why:`ARM, Bicep, Terraform and DSC describe the end state and let the engine work out what to change. CLI and PowerShell scripts are sequences of commands: they do exactly what you wrote, in that order, whatever the current state is.`},
+    {id:"cm2", type:"mc", title:"The second run fails",
+     q:`A deployment script creates a resource group, a storage account and a container with Azure CLI commands. The first run works. The second run (same parameters) fails with "container already exists". Which property is the script missing?`,
+     options:["Immutability","Idempotency","Drift detection","Declarative syntax highlighting"], answer:1,
+     hint:`The goal is "run it as often as you like, same result".`,
+     why:`An idempotent deployment can be repeated without errors or side effects. Declarative tools (Bicep, ARM, Terraform) are idempotent by design. Imperative scripts need explicit "does it exist?" checks, or should be replaced by a declarative template.`},
+    {id:"cm3", type:"multi", title:"Detecting drift",
+     q:`Which of these can tell you that the real configuration no longer matches what is defined in code? <i>Select all that apply.</i>`,
+     options:[
+       "Running <code>az deployment group what-if</code> with the Bicep file against the resource group",
+       "Running <code>terraform plan</code> against the current state",
+       "A Machine Configuration policy assignment in <b>Audit</b> mode",
+       "Compliance reports in Azure Automation State Configuration",
+       "A work item query in Azure Boards",
+       "Exporting the resource group once with <code>az group export</code>"
+     ], answer:[0,1,2,3],
+     hint:`Detection needs a comparison between the desired state and the actual state.`,
+     why:`what-if and <code>terraform plan</code> compare code with Azure; Machine Configuration and Automation State Configuration compare settings inside machines with the assigned configuration and report compliance. A Boards query knows nothing about resources, and a one-off export only shows today's state without comparing it to anything.`},
+    {id:"cm4", type:"mc", title:"Snowflake servers",
+     q:`Contoso's 20 web VMs were patched and tweaked by hand for years. Now no two are configured alike, and a failed update can't be rolled back cleanly. Which approach removes the root cause?`,
+     options:[
+       "Log every manual change in a wiki page",
+       "Adopt immutable infrastructure: build a versioned VM image in a pipeline and replace instances instead of changing them",
+       "Give more administrators RDP access so fixes happen faster",
+       "Run a nightly script that copies files from one 'golden' VM to the others"
+     ], answer:1,
+     hint:`The problem is that servers are changed in place.`,
+     why:`With immutable infrastructure, every instance comes from the same versioned image (or container), so instances can't drift apart, and rollback means deploying the previous version. Copy scripts and wikis just manage the symptoms of mutable servers.`},
+    {id:"cm5", type:"fill", title:"Vocabulary check",
+     q:`Fill in the missing terms.`,
+     tpl:`Bicep and Terraform are [[0]]: you describe the end state, not the steps.<br>
+Deploying the same template twice without changes is safe because the deployment is [[1]].<br>
+A firewall rule added by hand in the portal, but missing from the template, is an example of configuration [[2]].<br>
+Replacing VMs from a new image instead of patching them is called [[3]] infrastructure.`,
+     blanks:[["declarative"],["idempotent"],["drift"],["immutable"]],
+     hint:`what vs. how · same result every time · code ≠ reality · never change, always replace.`,
+     why:`These four terms are the vocabulary of every IaC question: declarative tools describe state, idempotency makes reruns safe, drift is code ≠ reality, and immutable infrastructure avoids drift on the machines themselves.`}
+  ]
+},
+/* ================================================================ 2 */
+{
+  group:"Foundations",
+  title:"Choosing a technology",
+  tag:"ARM · Bicep · Terraform · Ansible · DSC · CLI scripts",
+  intro:`The exam asks you to <b>recommend</b> a technology for a situation. Learn the deciding feature of each tool rather than every detail.`,
+  sections:[
+    {h:"The tools at a glance", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Tool</th><th>Style</th><th>Scope</th><th>Deciding features</th></tr>
+<tr><td><b>ARM templates</b> (JSON)</td><td>Declarative</td><td>Azure only</td><td>Native format of Azure Resource Manager; no state file (Azure is the state); verbose JSON</td></tr>
+<tr><td><b>Bicep</b></td><td>Declarative</td><td>Azure only</td><td>Concise language that compiles to ARM JSON; no state file; supports every resource type and API version as soon as it's in ARM; modules, what-if, deployment stacks</td></tr>
+<tr><td><b>Terraform</b></td><td>Declarative (HCL)</td><td>Multi-cloud and SaaS through providers (<code>azurerm</code>, <code>azapi</code>, AWS, …)</td><td>Keeps a <b>state file</b>; <code>plan</code> / <code>apply</code> workflow; one tool for several clouds</td></tr>
+<tr><td><b>Ansible</b></td><td>Task-based YAML playbooks, idempotent modules</td><td>OS configuration, also provisioning</td><td><b>Agentless</b>, pushes over SSH (Linux) or WinRM (Windows)</td></tr>
+<tr><td><b>Chef / Puppet</b></td><td>Chef: Ruby recipes · Puppet: declarative manifests</td><td>OS configuration</td><td><b>Agent-based</b>, nodes pull from a server</td></tr>
+<tr><td><b>PowerShell DSC</b></td><td>Declarative configuration in PowerShell</td><td>Settings inside machines</td><td>Compiled to MOF and enforced by the Local Configuration Manager; basis of Automation State Configuration and Machine Configuration</td></tr>
+<tr><td><b>Azure CLI / PowerShell scripts</b></td><td>Imperative</td><td>Anything in Azure</td><td>Great for glue tasks and one-offs; you must write idempotency yourself</td></tr>
+</table></div>`},
+    {h:"Moving between ARM and Bicep", p:`Bicep and ARM JSON convert both ways, so adopting Bicep doesn't throw away existing templates (see the <a href="../bicep-tutorial/index.html">Bicep Practice Lab</a> for the language itself):`,
+     lang:"sh", code:`az bicep decompile --file azuredeploy.json   # ARM JSON → Bicep (review the result!)
+az bicep build --file main.bicep             # Bicep → ARM JSON (main.json)`}
+  ],
+  tip:`Keywords → tool: <b>"multi-cloud" / "also AWS"</b> → Terraform. <b>"Azure only, no state file to manage, newest API versions"</b> → Bicep. <b>"agentless", "SSH"</b> → Ansible. <b>"settings inside Windows/Linux, desired state, compliance"</b> → DSC / Machine Configuration. <b>"one-off task"</b> → CLI script.`,
+  exercises:[
+    {id:"ct1", type:"match", title:"Recommend the tool",
+     q:`Match each requirement to the best-fitting technology.`,
+     choices:["Bicep","Terraform","Ansible","PowerShell DSC","Azure CLI script","ARM JSON template"],
+     rows:[
+       ["Provision the same app on Azure <b>and</b> AWS with one tool and one workflow","Terraform"],
+       ["Azure-only team wants concise declarative files and <b>no state file</b> to store or lock","Bicep"],
+       ["Configure packages on 200 existing Linux VMs over SSH, <b>without installing an agent</b>","Ansible"],
+       ["Keep Windows Server features and services in a declared state, enforced by the Local Configuration Manager","PowerShell DSC"],
+       ["A one-time task: rotate a storage key and print the new connection string","Azure CLI script"],
+       ["A third-party tool only accepts the native JSON format of Azure Resource Manager","ARM JSON template"]
+     ],
+     hint:`Look for the deciding keyword in each row: multi-cloud, state file, agentless, LCM, one-time, native JSON.`,
+     why:`Terraform's providers cover several clouds; Bicep is Azure-native without state; Ansible is agentless over SSH/WinRM; DSC's LCM enforces settings inside Windows; small one-off jobs fit an imperative script; and ARM JSON is what Azure Resource Manager consumes natively (Bicep compiles to it).`},
+    {id:"ct2", type:"multi", title:"True about Terraform",
+     q:`Which statements about Terraform on Azure are true? <i>Select all that apply.</i>`,
+     options:[
+       "It records what it manages in a state file",
+       "<code>terraform plan</code> shows the changes before <code>terraform apply</code> makes them",
+       "The same workflow can manage Azure, other clouds and SaaS products through providers",
+       "It needs no state because Azure Resource Manager stores it",
+       "It only works if you first convert the configuration to ARM JSON",
+       "The state file can contain secrets, so it must be stored securely"
+     ], answer:[0,1,2,5],
+     hint:`State is the big difference between Terraform and Bicep.`,
+     why:`Terraform keeps its own state (local or in a remote backend such as Azure Storage), plans changes against it and talks to Azure through providers like <code>azurerm</code> and <code>azapi</code>, not through ARM templates. Because state holds attribute values, it can include secrets and must be protected.`},
+    {id:"ct3", type:"match", title:"Provisioning or configuration?",
+     q:`Is each task about <b>provisioning</b> Azure resources, or about <b>configuration management</b> inside machines?`,
+     choices:["Provisioning","Configuration management"],
+     rows:[
+       ["A Bicep file that creates an App Service plan and web app","Provisioning"],
+       ["A Terraform configuration that creates a virtual network","Provisioning"],
+       ["Ensure the Windows time zone is UTC on every server","Configuration management"],
+       ["An Ansible playbook that installs nginx on existing VMs","Configuration management"],
+       ["A Machine Configuration policy that audits password settings in Linux","Configuration management"],
+       ["An ARM template that deploys a SQL database","Provisioning"]
+     ],
+     hint:`Is the target an Azure resource, or something inside the operating system?`,
+     why:`ARM, Bicep and Terraform create and change Azure resources. DSC, Machine Configuration, Ansible, Chef and Puppet manage what happens inside the OS: packages, services, files, registry and security settings. Real solutions combine both: Bicep creates the VM, Machine Configuration keeps it configured.`},
+    {id:"ct4", type:"mc", title:"Existing ARM templates",
+     q:`A team maintains 40 large ARM JSON templates and finds them hard to read and review. They want to stay Azure-native and keep the same deployment engine. What do you recommend?`,
+     options:[
+       "Rewrite everything in Azure CLI scripts",
+       "Decompile the templates to Bicep with <code>az bicep decompile</code>, review and clean up the output, and deploy the Bicep files",
+       "Convert to Terraform, because ARM templates can't be deployed from pipelines",
+       "Keep JSON but remove the parameters section to shorten the files"
+     ], answer:1,
+     hint:`Which language compiles to exactly the same ARM JSON?`,
+     why:`Bicep is a transparent abstraction over ARM: it compiles to ARM JSON and uses the same engine, deployment modes and what-if. <code>az bicep decompile</code> gives a starting point (it is best-effort, so review it). Scripts would lose declarative, idempotent deployments, and ARM templates deploy from pipelines just fine.`}
+  ]
+},
+/* ================================================================ 3 */
+{
+  group:"Foundations",
+  title:"IaC strategy",
+  tag:"source control · pull requests · parameter files · automation",
+  intro:`An IaC <b>strategy</b> answers: where does the code live, how is a change reviewed, how do environments differ, and how does it reach Azure? The short version: <b>everything in Git, every change through a pull request, one template with a parameter file per environment, deployed only by a pipeline.</b>`,
+  sections:[
+    {h:"A typical repository", lang:"text", code:`infra/
+  main.bicep                 one template for all environments
+  modules/                   reusable pieces (or pulled from a Bicep registry)
+  dev.bicepparam             environment-specific values
+  test.bicepparam
+  prod.bicepparam
+bicepconfig.json             linter rules, registry aliases
+.azuredevops/ or .github/    pipeline / workflow definitions`},
+    {h:"Parameter files and secrets", p:`Environments differ only in their <b>parameter files</b>. Secrets never go into the repository: reference them from Key Vault at deployment time. In a <code>.bicepparam</code> file you use <code>getSecret()</code> (the Key Vault must allow template deployment access, <code>enabledForTemplateDeployment</code>):`,
+     lang:"bicep", code:`using './main.bicep'
+
+param environmentName = 'prod'
+param appServiceSku = 'P1v3'
+param sqlAdminPassword = az.getSecret('<subscription-id>', 'rg-secrets', 'kv-contoso-prod', 'sqlAdminPassword')`,
+     after:`<p>JSON parameter files use a <code>reference</code> object with <code>keyVault.id</code> and <code>secretName</code> for the same purpose.</p>`},
+    {h:"The delivery pipeline", lang:"text", code:`pull request    lint (bicep build / linter) → static analysis (PSRule) → validate → what-if
+                what-if output posted for the reviewer → review + approval → merge
+main            deploy dev → tests → approval → deploy test → approval → deploy prod
+                (same commit, same template, different parameter file)`,
+     after:`<p>Protect the result: the pipeline's identity is the only one with write access to production, branch policies or rulesets protect <code>main</code>, and environments add approvals and checks.</p>`}
+  ],
+  tip:`If an answer says "change it in the portal and update the template later", it's wrong. Look for: <b>Git + pull request review + automated validation + pipeline deployment</b>, secrets from <b>Key Vault</b>, and <b>parameter files</b> (not copied templates) per environment.`,
+  exercises:[
+    {id:"st1", type:"multi", title:"Good IaC practice",
+     q:`Which practices belong in a sound IaC strategy? <i>Select all that apply.</i>`,
+     options:[
+       "Keep templates, parameter files and pipeline definitions in the same Git repository",
+       "Keep one copy of the template per environment and edit each copy separately",
+       "Post what-if output to the pull request so reviewers see the effect of a change",
+       "Store the SQL admin password in <code>prod.bicepparam</code> so the pipeline can read it",
+       "Promote the same commit through dev, test and prod with environment-specific parameter files",
+       "Allow quick fixes in the portal and copy them into the template afterwards"
+     ], answer:[0,2,4],
+     hint:`One template, many parameter files, no secrets in Git, no manual changes.`,
+     why:`Version everything together, make the effect of a change visible in review, and promote the same code through every environment. Copied templates drift apart, secrets in Git leak, and portal fixes are drift by definition.`},
+    {id:"st2", type:"text", lang:"bicep", title:"Write a production parameter file",
+     q:`Write <code>prod.bicepparam</code> for <code>main.bicep</code> (same folder):
+      <ul class="tips">
+        <li><code>environmentName</code> = <code>prod</code></li>
+        <li><code>appServiceSku</code> = <code>P1v3</code></li>
+        <li><code>sqlAdminPassword</code> read from Key Vault <code>kv-contoso-prod</code> in resource group <code>rg-secrets</code>, secret <code>sqlAdminPassword</code>. Use <code>&lt;subscription-id&gt;</code> as the subscription.</li>
+      </ul>`,
+     starter:`// prod.bicepparam
+`,
+     checks:[
+       {l:"Starts with: using './main.bicep'", t:a => /^\s*using\s+'(\.\/)?main\.bicep'\s*$/m.test(a.src.replace(/^\s*\/\/.*$/gm, "")) },
+       {l:"param environmentName = 'prod'", t:a => /^\s*param\s+environmentName\s*=\s*'prod'\s*$/m.test(a.src)},
+       {l:"param appServiceSku = 'P1v3'", t:a => /^\s*param\s+appServiceSku\s*=\s*'P1v3'\s*$/m.test(a.src)},
+       {l:"sqlAdminPassword comes from getSecret(subscription, resource group, vault, secret)", t:a => /^\s*param\s+sqlAdminPassword\s*=\s*(az\.)?getSecret\(\s*'[^']+'\s*,\s*'rg-secrets'\s*,\s*'kv-contoso-prod'\s*,\s*'sqlAdminPassword'\s*(,\s*'[^']*'\s*)?\)\s*$/m.test(a.src)},
+       {l:"No password value written in clear text", t:a => !/sqlAdminPassword\s*=\s*'/.test(a.src)}
+     ],
+     hint:`A <code>.bicepparam</code> file starts with a <code>using</code> statement, then one <code>param name = value</code> line per parameter. <code>getSecret</code> takes subscription ID, resource group, vault name and secret name, in that order.`,
+     solution:`using './main.bicep'
+
+param environmentName = 'prod'
+param appServiceSku = 'P1v3'
+param sqlAdminPassword = az.getSecret('<subscription-id>', 'rg-secrets', 'kv-contoso-prod', 'sqlAdminPassword')`,
+     why:`The <code>using</code> line ties the parameter file to its template, so the Bicep tooling can check names and types. <code>getSecret</code> (the <code>az.</code> namespace prefix is optional) makes Resource Manager fetch the secret during deployment, so it never appears in Git or pipeline logs. The target parameter must be declared <code>@secure()</code> in <code>main.bicep</code>.`},
+    {id:"st3", type:"mc", title:"Portal changes keep happening",
+     q:`Production keeps drifting because administrators change settings in the portal "just this once". Management wants the Bicep files to be the single source of truth, with the least ongoing effort. What should you do?`,
+     options:[
+       "Send a weekly email reminding admins not to use the portal",
+       "Remove write access to production for people, grant it only to the pipeline's identity, and route every change through a pull request and the pipeline",
+       "Export the resource group every night and commit the export to Git",
+       "Switch from incremental to complete mode so manual changes are visible in the activity log"
+     ], answer:1,
+     hint:`Prevention beats detection: who is allowed to change production?`,
+     why:`If only the pipeline (through a service connection or federated identity) can write to production, every change must pass review and automation. Exported templates are not maintainable source code, and complete mode deletes resources, it doesn't make portal edits impossible. Deployment stack deny settings or Azure Policy can add further guardrails.`},
+    {id:"st4", type:"lines", title:"Spot the weak spots", prose:true,
+     q:`Here is a team's IaC working agreement. Click the <b>three</b> statements that break good IaC practice.`,
+     code:[
+       "All Bicep files and .bicepparam files live in the app's Git repository.",
+       "Each environment has its own copy of main.bicep: main-dev.bicepparam is fine, but main-prod.bicep is edited separately.",
+       "Every pull request runs the linter, validation and what-if.",
+       "The SQL administrator password is committed in prod.bicepparam, because the repository is private.",
+       "Only the pipeline's managed identity has Contributor rights on the production resource groups.",
+       "During incidents, admins fix production in the portal and nobody updates the template.",
+       "Production deployments wait for an approval on the prod environment."
+     ], answer:[1,3,5],
+     hint:`Look for copied templates, secrets in Git and changes that bypass the code.`,
+     why:`Separate template copies drift apart (use one template with parameter files), secrets in Git are exposed to everyone with read access and stay in history (use Key Vault references), and untracked portal fixes create drift that the next deployment may overwrite or that what-if will flag as changes.`}
+  ]
+},
+/* ================================================================ 4 */
+{
+  group:"Azure Resource Manager",
+  title:"ARM templates",
+  tag:"structure · incremental vs complete · linked & nested · template specs",
+  intro:`Every Bicep file ends up as an <b>ARM template</b>: the JSON format that Azure Resource Manager deploys. The exam expects you to know its structure, the two deployment modes, how templates are split up, and how they are shared as <b>template specs</b>.`,
+  sections:[
+    {h:"Structure", lang:"json", code:`{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": { "storageName": { "type": "string" } },
+  "variables": { },
+  "functions": [ ],
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('storageName')]",
+      "location": "[resourceGroup().location]",
+      "sku": { "name": "Standard_LRS" },
+      "kind": "StorageV2"
+    }
+  ],
+  "outputs": { }
+}`, after:`<p>Required: <code>$schema</code>, <code>contentVersion</code> and <code>resources</code>. Optional: <code>apiProfile</code>, <code>parameters</code>, <code>variables</code>, <code>functions</code>, <code>outputs</code>. Expressions in square brackets (<code>[parameters('x')]</code>) are evaluated during deployment.</p>`},
+    {h:"Deployment modes", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Mode</th><th>Resources in the template</th><th>Resources in the resource group but <b>not</b> in the template</th></tr>
+<tr><td><b>Incremental</b> (default, recommended)</td><td>Created or updated</td><td>Left unchanged</td></tr>
+<tr><td><b>Complete</b></td><td>Created or updated</td><td><b>Deleted</b></td></tr>
+</table></div>
+<p>Complete mode only works for <b>root-level</b> templates deployed to a <b>resource group</b> (not at subscription scope, and linked or nested templates must use incremental). Microsoft now says complete mode is <b>not recommended</b> and will be gradually deprecated; use <b>deployment stacks</b> when you need deletes.</p>`},
+    {h:"Splitting templates", lang:"text", code:`Nested template   the child template is written inline in a Microsoft.Resources/deployments
+                  resource ("template": { … }) — one file, logically separate deployment
+Linked template   the deployments resource points to another file with "templateLink":
+                  { "uri": "https://…/storage.json?<SAS>" } — the URI must be reachable
+                  by Resource Manager (public URL, storage + SAS token), not a local path;
+                  "relativePath" works when the parent itself came from a URI or template spec
+Bicep modules     compile into nested deployments automatically`},
+    {h:"Template specs", p:`A <b>template spec</b> stores a template as an Azure resource (<code>Microsoft.Resources/templateSpecs</code>) with <b>versions</b>. Access is controlled with Azure RBAC (Reader on the spec is enough to deploy it), so teams can share approved templates without a storage account or SAS tokens.`,
+     lang:"sh", code:`az ts create --name storageSpec --version 1.0 --resource-group rg-specs \\
+  --location westeurope --template-file storage.json        # also accepts a .bicep file
+
+az deployment group create --resource-group rg-app \\
+  --template-spec "/subscriptions/<sub>/resourceGroups/rg-specs/providers/Microsoft.Resources/templateSpecs/storageSpec/versions/1.0"`}
+  ],
+  tip:`"Remove resources that are no longer in the template" → complete mode at resource group scope, but the <b>preferred</b> answer today is a <b>deployment stack</b>. "Share approved templates inside the organization with RBAC and versions" → <b>template specs</b> (or a private Bicep registry). Linked template URIs must be <b>accessible to Resource Manager</b>.`,
+  exercises:[
+    {id:"arm1", type:"fill", title:"Complete the template skeleton", mono:true,
+     q:`Fill in the three <b>required</b> top-level properties of an ARM template.`,
+     tpl:`{
+  "[[0]]": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "[[1]]": "1.0.0.0",
+  "parameters": { },
+  "[[2]]": [ ],
+  "outputs": { }
+}`,
+     blanks:[["$schema"],["contentVersion"],["resources"]],
+     hint:`One points to the JSON schema, one is a version number you choose, one is the list of things to deploy.`,
+     why:`<code>$schema</code>, <code>contentVersion</code> and <code>resources</code> are required. Everything else (<code>parameters</code>, <code>variables</code>, <code>functions</code>, <code>outputs</code>, <code>apiProfile</code>) is optional.`},
+    {id:"arm2", type:"match", title:"Incremental or complete?",
+     q:`Resource group <code>rg-app</code> contains <b>stapp01</b> (storage), <b>vm-app01</b> (VM) and <b>kv-app01</b> (Key Vault). The template defines only <b>stapp01</b> (with a changed SKU) and a new <b>appi-app01</b>. What happens to each resource?`,
+     choices:["Created","Updated","Unchanged","Deleted"],
+     rows:[
+       ["<b>Incremental</b> mode: vm-app01","Unchanged"],
+       ["<b>Incremental</b> mode: stapp01","Updated"],
+       ["<b>Incremental</b> mode: appi-app01","Created"],
+       ["<b>Complete</b> mode: vm-app01","Deleted"],
+       ["<b>Complete</b> mode: kv-app01","Deleted"],
+       ["<b>Complete</b> mode: appi-app01","Created"]
+     ],
+     hint:`Both modes create and update what's in the template. They only differ for resources that are missing from it.`,
+     why:`Incremental mode ignores resources that aren't in the template; complete mode deletes them. That's why complete mode is dangerous (a forgotten resource disappears) and why what-if should always be run first. (A resource lock on the resource group protects against complete-mode deletes.)`},
+    {id:"arm3", type:"lines", title:"Spot the errors in the linked deployment",
+     q:`This template is deployed with <code>az deployment group create --mode Complete</code>. Its linked deployment fails. Click the <b>two</b> faulty lines.`,
+     code:[
+       `{`,
+       `  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",`,
+       `  "contentVersion": "1.0.0.0",`,
+       `  "resources": [`,
+       `    {`,
+       `      "type": "Microsoft.Resources/deployments",`,
+       `      "apiVersion": "2022-09-01",`,
+       `      "name": "linkedStorage",`,
+       `      "properties": {`,
+       `        "mode": "Complete",`,
+       `        "templateLink": {`,
+       `          "uri": "C:\\\\templates\\\\storage.json",`,
+       `          "contentVersion": "1.0.0.0"`,
+       `        }`,
+       `      }`,
+       `    }`,
+       `  ]`,
+       `}`
+     ], answer:[9,11],
+     hint:`Which mode do child deployments support, and who has to download the linked file?`,
+     why:`Linked and nested deployments must use <code>Incremental</code> mode; only the root-level template can run in complete mode. And the linked template's <code>uri</code> is fetched by Azure Resource Manager, not by your machine, so it must be a URL that Resource Manager can reach (for example, a storage blob with a SAS token), not a local path.`},
+    {id:"arm4", type:"match", title:"Which feature fits?",
+     q:`Match each need to the ARM feature.`,
+     choices:["Nested template","Linked template","Template spec","Complete mode","Incremental mode"],
+     rows:[
+       ["Share a versioned, approved VM template with other teams, controlled by Azure RBAC, no SAS tokens","Template spec"],
+       ["Deploy a child deployment to a different resource group, written inline in the same file","Nested template"],
+       ["Reference a separate <code>network.json</code> stored in a storage account","Linked template"],
+       ["Add one resource without touching anything else in the resource group","Incremental mode"],
+       ["Make the resource group contain exactly what the root template defines (legacy approach)","Complete mode"]
+     ],
+     hint:`Inline vs. separate file; shared as an Azure resource; add vs. mirror.`,
+     why:`Nested = inline <code>template</code>; linked = <code>templateLink</code> to a reachable URI; template spec = versioned Azure resource shared with RBAC; incremental = add/update only; complete = mirror the template (deletes extras), now superseded by deployment stacks.`},
+    {id:"arm5", type:"text", lang:"sh", title:"Publish and deploy a template spec",
+     q:`Write two Azure CLI commands:
+      <ol class="tips">
+        <li>Create template spec <code>storageSpec</code>, version <code>1.0</code>, in resource group <code>rg-specs</code>, location <code>westeurope</code>, from <code>storage.json</code>.</li>
+        <li>Deploy that version to resource group <code>rg-app</code>. Its ID is <code>/subscriptions/&lt;sub&gt;/resourceGroups/rg-specs/providers/Microsoft.Resources/templateSpecs/storageSpec/versions/1.0</code> (you may also use a shell variable like <code>$id</code>).</li>
+      </ol>`,
+     starter:`# 1. create the template spec
+
+# 2. deploy it
+`,
+     checks:[
+       {l:"az ts create with --name storageSpec and --version 1.0", t:a => a.run("az ts create", {"--name|-n":/^storageSpec$/i, "--version":"1.0"})},
+       {l:"…in resource group rg-specs, location westeurope", t:a => a.run("az ts create", {"--resource-group|-g":"rg-specs", "--location|-l":"westeurope"})},
+       {l:"…from storage.json", t:a => a.run("az ts create", {"--template-file|-f":/(^|[\/\\])storage\.json$/i})},
+       {l:"az deployment group create into rg-app", t:a => a.run("az deployment group create", {"--resource-group|-g":"rg-app"})},
+       {l:"…using --template-spec with the version 1.0 resource ID", t:a => a.run("az deployment group create", {"--template-spec":/(templateSpecs\/storageSpec\/versions\/1\.0$|^\$\{?\w+\}?$|^\$\()/i})},
+       {l:"The deployment doesn't use --template-file (it deploys the spec)", t:a => !a.run("az deployment group create", {"--template-file|-f":null})}
+     ],
+     hint:`Template spec commands live under <code>az ts</code>. A deployment takes either <code>--template-file</code>, <code>--template-uri</code> or <code>--template-spec</code>.`,
+     solution:`az ts create --name storageSpec --version 1.0 --resource-group rg-specs --location westeurope --template-file storage.json
+
+az deployment group create --resource-group rg-app --template-spec "/subscriptions/<sub>/resourceGroups/rg-specs/providers/Microsoft.Resources/templateSpecs/storageSpec/versions/1.0"`,
+     why:`<code>az ts create</code> stores the template as a versioned resource. Anyone with Reader access on the spec (and deployment rights on the target) can deploy it by version ID with <code>--template-spec</code>. You can get the ID with <code>az ts show --name storageSpec --resource-group rg-specs --version 1.0 --query id -o tsv</code>.`}
+  ]
+},
+
+/* ================================================================ 5 */
+{
+  group:"Azure Resource Manager",
+  title:"Bicep deployment: what-if, stacks, registries",
+  tag:"what-if · deployment stacks · Bicep registry · template specs",
+  intro:`This module is about <b>deploying and sharing</b> Bicep, not about the language itself. For parameters, loops, modules and the rest, practise in the <a href="../bicep-tutorial/index.html">Bicep Practice Lab</a>. Here you'll preview changes with <b>what-if</b>, manage resources as a unit with <b>deployment stacks</b>, and share modules through a <b>registry</b>.`,
+  sections:[
+    {h:"Preview with what-if", lang:"sh", code:`az deployment group what-if --resource-group rg-web --template-file main.bicep --parameters prod.bicepparam
+az deployment group create  --resource-group rg-web --template-file main.bicep --confirm-with-what-if   # preview, then ask
+New-AzResourceGroupDeployment -ResourceGroupName rg-web -TemplateFile main.bicep -WhatIf                # Azure PowerShell`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Change type</th><th>Meaning</th></tr>
+<tr><td><b>Create</b></td><td>In the template, doesn't exist yet</td></tr>
+<tr><td><b>Delete</b></td><td>Exists, not in the template, and the deployment would delete it (complete mode)</td></tr>
+<tr><td><b>Ignore</b></td><td>Exists, not in the template, left alone (incremental mode)</td></tr>
+<tr><td><b>NoChange</b></td><td>Exists and the properties won't change</td></tr>
+<tr><td><b>Modify</b></td><td>Exists and some properties will change</td></tr>
+<tr><td><b>Deploy</b></td><td>Will be redeployed, but what-if can't tell whether properties change</td></tr>
+</table></div>
+<p>what-if is a <b>prediction</b>: it doesn't deploy anything, and a clean result doesn't guarantee the deployment will succeed.</p>`},
+    {h:"Deployment stacks", p:`A <b>deployment stack</b> (<code>Microsoft.Resources/deploymentStacks</code>) is a deployment that <b>remembers the resources it manages</b>. When you redeploy without a resource, the stack's <b>action on unmanage</b> decides whether it is detached or deleted, and <b>deny settings</b> stop people from changing or deleting managed resources outside the stack. Stacks can target a resource group, a subscription or a management group.`,
+     lang:"sh", code:`az stack group create --name stack-web --resource-group rg-web \\
+  --template-file main.bicep --parameters prod.bicepparam \\
+  --action-on-unmanage deleteResources \\
+  --deny-settings-mode denyWriteAndDelete
+
+# --action-on-unmanage   detachAll (keep removed resources, the default behaviour)
+#                        deleteResources (delete removed resources, keep resource groups)
+#                        deleteAll (delete removed resources and resource groups)
+# --deny-settings-mode   none | denyDelete | denyWriteAndDelete
+# also: az stack sub create --location …, az stack mg create --management-group-id …`},
+    {h:"Sharing modules", lang:"bicep", code:`// publish (CLI):  az bicep publish --file storage.bicep --target br:contosoacr.azurecr.io/bicep/modules/storage:v1
+
+module stg 'br:contosoacr.azurecr.io/bicep/modules/storage:v1' = {     // private registry (Azure Container Registry)
+  params: { storageAccountName: 'stcontoso001' }
+}
+
+module net 'ts:<subscription-id>/rg-specs/networkSpec:1.0' = {         // template spec
+  params: { vnetName: 'vnet-web' }
+}`,
+     after:`<p>Aliases in <code>bicepconfig.json</code> shorten registry paths (for example <code>br/ContosoRegistry:storage:v1</code>), and the public registry hosts the Azure Verified Modules under <code>br/public:avm/…</code>. A private registry is just an Azure Container Registry: grant <b>AcrPull</b> to consumers and <b>AcrPush</b> to the publishing pipeline.</p>`}
+  ],
+  tip:`"See what will change before deploying" → <b>what-if</b>. "Delete resources removed from the template" and "stop people deleting what the pipeline deployed" → <b>deployment stack</b> with <code>deleteResources</code>/<code>deleteAll</code> and <code>denyDelete</code>/<code>denyWriteAndDelete</code>. "Share versioned Bicep modules" → <b>private Bicep registry (ACR)</b> or <b>template specs</b>.`,
+  exercises:[
+    {id:"bd1", type:"text", lang:"sh", title:"Preview a production deployment",
+     q:`Write one command that <b>previews</b> (without deploying) what <code>main.bicep</code> with parameter file <code>prod.bicepparam</code> would change in resource group <code>rg-web</code>. Azure CLI or Azure PowerShell is fine.`,
+     starter:``,
+     checks:[
+       {l:"A what-if command (az deployment group what-if, or New-AzResourceGroupDeployment -WhatIf)", t:a => a.run("az deployment group what-if") || a.run("new-azresourcegroupdeployment", {"-whatif":null}) || a.run("get-azresourcegroupdeploymentwhatifresult")},
+       {l:"Targets resource group rg-web", t:a => a.run("az deployment group what-if", {"--resource-group|-g":"rg-web"}) || a.run("new-azresourcegroupdeployment", {"-whatif":null, "-resourcegroupname":"rg-web"}) || a.run("get-azresourcegroupdeploymentwhatifresult", {"-resourcegroupname":"rg-web"})},
+       {l:"Uses main.bicep", t:a => a.run("az deployment group what-if", {"--template-file|-f":/(^|[\/\\])main\.bicep$/i}) || a.run("new-azresourcegroupdeployment", {"-whatif":null, "-templatefile":/(^|[\/\\])main\.bicep$/i}) || a.run("get-azresourcegroupdeploymentwhatifresult", {"-templatefile":/(^|[\/\\])main\.bicep$/i})},
+       {l:"Uses prod.bicepparam", t:a => a.run("az deployment group what-if", {"--parameters|-p":/(^|[\/\\])prod\.bicepparam$/i}) || a.run("new-azresourcegroupdeployment", {"-whatif":null, "-templateparameterfile":/(^|[\/\\])prod\.bicepparam$/i}) || a.run("get-azresourcegroupdeploymentwhatifresult", {"-templateparameterfile":/(^|[\/\\])prod\.bicepparam$/i})},
+       {l:"Doesn't deploy (no az deployment group create)", t:a => !a.run("az deployment group create")}
+     ],
+     hint:`what-if is a sibling of <code>create</code> and <code>validate</code> under <code>az deployment group</code>. Parameter files go in <code>--parameters</code>.`,
+     solution:`az deployment group what-if --resource-group rg-web --template-file main.bicep --parameters prod.bicepparam`,
+     why:`<code>az deployment group what-if</code> (or <code>-WhatIf</code> in Azure PowerShell) asks Resource Manager to predict the changes and prints them as Create / Modify / Delete / Ignore / NoChange. <code>create --confirm-with-what-if</code> also shows the preview, but then deploys if you confirm, so it isn't a pure preview. <code>validate</code> only runs preflight checks.`},
+    {id:"bd2", type:"match", title:"Read the what-if output",
+     q:`Which what-if change type is reported in each situation?`,
+     choices:["Create","Delete","Ignore","NoChange","Modify"],
+     rows:[
+       ["The template defines a Key Vault that doesn't exist yet","Create"],
+       ["A storage account exists and the template changes its SKU","Modify"],
+       ["A VM exists in the resource group but not in the template; incremental mode","Ignore"],
+       ["The same VM, but the deployment uses complete mode","Delete"],
+       ["An App Service plan exists with exactly the properties in the template","NoChange"]
+     ],
+     hint:`Incremental mode never deletes; it reports resources it won't touch.`,
+     why:`what-if mirrors the deployment mode: resources outside the template are <b>Ignore</b> in incremental mode and <b>Delete</b> in complete mode. Reviewing Delete and Modify lines is the main point of posting what-if output on a pull request.`},
+    {id:"bd3", type:"text", lang:"sh", title:"Create a deployment stack",
+     q:`Write an Azure CLI command that deploys <code>main.bicep</code> with <code>prod.bicepparam</code> as deployment stack <code>stack-web</code> in resource group <code>rg-web</code>, so that:
+      <ul class="tips">
+        <li>resources removed from the template are <b>deleted</b> on the next deployment</li>
+        <li>nobody outside the stack can <b>modify or delete</b> the managed resources</li>
+      </ul>`,
+     starter:``,
+     checks:[
+       {l:"az stack group create named stack-web", t:a => a.run("az stack group create", {"--name|-n":"stack-web"})},
+       {l:"…in resource group rg-web", t:a => a.run("az stack group create", {"--resource-group|-g":"rg-web"})},
+       {l:"…with main.bicep and prod.bicepparam", t:a => a.run("az stack group create", {"--template-file|-f":/(^|[\/\\])main\.bicep$/i, "--parameters|-p":/(^|[\/\\])prod\.bicepparam$/i})},
+       {l:"--action-on-unmanage deletes removed resources (deleteResources or deleteAll)", t:a => a.run("az stack group create", {"--action-on-unmanage":/^delete-?(resources|all)$/i})},
+       {l:"--deny-settings-mode denyWriteAndDelete", t:a => a.run("az stack group create", {"--deny-settings-mode":/^denyWriteAndDelete$/i})}
+     ],
+     hint:`Stack commands are under <code>az stack group</code>. Two settings decide the behaviour: what happens to unmanaged resources, and which operations are denied.`,
+     solution:`az stack group create --name stack-web --resource-group rg-web --template-file main.bicep --parameters prod.bicepparam --action-on-unmanage deleteResources --deny-settings-mode denyWriteAndDelete`,
+     why:`<code>--action-on-unmanage deleteResources</code> (or <code>deleteAll</code>, which also removes resource groups the stack manages) deletes resources you drop from the template; <code>detachAll</code> would only stop managing them. <code>denyWriteAndDelete</code> places deny assignments so that even Owners can't change or delete the resources outside the stack; <code>denyDelete</code> would still allow edits. You can exclude principals (for example, the pipeline identity) with <code>--deny-settings-excluded-principals</code>.`},
+    {id:"bd4", type:"multi", title:"Why deployment stacks?",
+     q:`Your team uses complete mode to clean up removed resources. Which are real advantages of switching to deployment stacks? <i>Select all that apply.</i>`,
+     options:[
+       "Stacks can manage resources at subscription and management group scope, across several resource groups",
+       "Deny settings can block changes and deletes made outside the stack",
+       "You can choose to detach instead of delete removed resources",
+       "Stacks skip validation, so deployments are faster",
+       "Microsoft recommends stacks instead of complete mode, which it plans to deprecate gradually",
+       "Stacks remove the need for parameter files"
+     ], answer:[0,1,2,4],
+     hint:`Compare scopes, protection and control over deletes.`,
+     why:`Complete mode works only for root templates at resource group scope and can't protect resources. Stacks track managed resources at resource group, subscription or management group scope, let you choose detach or delete, and add deny settings. They still validate templates and use parameters like any other deployment.`},
+    {id:"bd5", type:"fill", title:"Publish and consume a shared module", mono:true,
+     q:`Complete the commands and module references.`,
+     tpl:`# publish storage.bicep as version v1 to the private registry
+az bicep [[0]] --file storage.bicep --target [[1]]:contosoacr.azurecr.io/bicep/modules/storage:v1
+
+// consume it in main.bicep
+module stg '[[2]]:contosoacr.azurecr.io/bicep/modules/storage:v1' = {
+  params: { storageAccountName: 'stcontoso001' }
+}
+
+// consume version 1.0 of the template spec networkSpec
+module net '[[3]]:<subscription-id>/rg-specs/networkSpec:1.0' = {
+  params: { vnetName: 'vnet-web' }
+}`,
+     blanks:[["publish"],["br"],["br"],["ts"]],
+     hint:`Registry references start with a two-letter scheme for "Bicep registry"; template spec references use another two-letter scheme.`,
+     why:`<code>az bicep publish --target br:&lt;registry&gt;/&lt;path&gt;:&lt;tag&gt;</code> pushes a module to Azure Container Registry, and <code>br:</code> references pull it at build time. Template specs are referenced with <code>ts:&lt;subscription&gt;/&lt;resource group&gt;/&lt;name&gt;:&lt;version&gt;</code>. Both let teams reuse approved, versioned building blocks.`}
+  ]
+},
+/* ================================================================ 6 */
+{
+  group:"Azure Resource Manager",
+  title:"Testing IaC",
+  tag:"linter · validate · what-if · ARM TTK · PSRule",
+  intro:`IaC is code, so it gets tested like code: fast static checks first, then checks that ask Azure, then real deployments to a test environment. Each layer catches different problems.`,
+  sections:[
+    {h:"The layers", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Layer</th><th>Tool</th><th>Catches</th></tr>
+<tr><td>Lint</td><td><b>Bicep linter</b> (in VS Code, <code>az bicep build</code>, <code>az bicep lint</code>), rules in <code>bicepconfig.json</code>; <code>terraform fmt -check</code> / <code>terraform validate</code></td><td>Syntax errors, unused parameters, hard-coded URLs, missing secure decorators</td></tr>
+<tr><td>Static analysis</td><td><b>ARM template test toolkit</b> (ARM TTK, <code>Test-AzTemplate</code>, works on JSON, so build Bicep first); <b>PSRule for Azure</b> (rules based on the Azure Well-Architected Framework, reads Bicep and ARM)</td><td>Best-practice and security problems: TLS versions, HTTPS-only, location parameters, API versions</td></tr>
+<tr><td>Preflight</td><td><code>az deployment group validate</code></td><td>Whether Resource Manager would accept the deployment: invalid values, missing parameters</td></tr>
+<tr><td>Preview</td><td><code>az deployment group what-if</code> / <code>terraform plan</code></td><td>Unexpected creates, modifies and deletes</td></tr>
+<tr><td>Integration</td><td>Deploy to a short-lived test environment, then run smoke tests (for example, Pester)</td><td>Runtime problems no static check can see</td></tr>
+</table></div>`},
+    {h:"Configuring the linter", lang:"json", code:`{
+  "analyzers": {
+    "core": {
+      "enabled": true,
+      "rules": {
+        "no-unused-params": { "level": "error" },
+        "no-hardcoded-env-urls": { "level": "warning" }
+      }
+    }
+  }
+}`, after:`<p>Rule levels are <code>off</code>, <code>info</code>, <code>warning</code> and <code>error</code>. Setting a rule to <code>error</code> makes <code>bicep build</code> fail, so the pipeline fails too.</p>`}
+  ],
+  tip:`"Check templates against Azure best practices / Well-Architected Framework in the pipeline" → <b>PSRule for Azure</b> (or ARM TTK for JSON templates). "See what would be deleted" → <b>what-if</b>. "Would Azure accept this deployment?" → <b>validate</b>.`,
+  exercises:[
+    {id:"te1", type:"match", title:"Pick the test",
+     q:`Match each need to the tool or command.`,
+     choices:["Bicep linter","ARM template test toolkit","PSRule for Azure","az deployment group validate","az deployment group what-if"],
+     rows:[
+       ["Flag an unused parameter while the developer types in VS Code","Bicep linter"],
+       ["Run <code>Test-AzTemplate</code> against a folder of ARM JSON templates","ARM template test toolkit"],
+       ["Check Bicep files against rules derived from the Azure Well-Architected Framework in CI","PSRule for Azure"],
+       ["Ask Resource Manager whether the template and parameters would be accepted, without a change list","az deployment group validate"],
+       ["Show the reviewer which resources would be deleted","az deployment group what-if"]
+     ],
+     hint:`Editor-time, JSON test cmdlet, WAF rules, preflight, change preview.`,
+     why:`The linter is built into the Bicep tooling. ARM TTK's <code>Test-AzTemplate</code> tests JSON templates. PSRule for Azure checks Bicep/ARM against WAF-based rules. <code>validate</code> is a preflight check, and <code>what-if</code> predicts the changes.`},
+    {id:"te2", type:"text", lang:"json", title:"Make the linter stricter",
+     q:`Write <code>bicepconfig.json</code> so that the linter is enabled and:
+      <ul class="tips">
+        <li><code>no-unused-params</code> is an <b>error</b></li>
+        <li><code>secure-secrets-in-params</code> is an <b>error</b></li>
+        <li><code>no-hardcoded-location</code> is <b>off</b></li>
+      </ul>`,
+     starter:`{
+}`,
+     checks:[
+       {l:"Rules sit under analyzers.core.rules", t:a => !!a.json.analyzers.core.rules},
+       {l:"Linter enabled (analyzers.core.enabled: true)", t:a => a.json.analyzers.core.enabled === true},
+       {l:"no-unused-params level error", t:a => a.json.analyzers.core.rules["no-unused-params"].level === "error"},
+       {l:"secure-secrets-in-params level error", t:a => a.json.analyzers.core.rules["secure-secrets-in-params"].level === "error"},
+       {l:"no-hardcoded-location level off", t:a => a.json.analyzers.core.rules["no-hardcoded-location"].level === "off"}
+     ],
+     hint:`Nesting: <code>analyzers</code> → <code>core</code> → <code>rules</code> → rule name → <code>level</code>.`,
+     solution:`{
+  "analyzers": {
+    "core": {
+      "enabled": true,
+      "rules": {
+        "no-unused-params": { "level": "error" },
+        "secure-secrets-in-params": { "level": "error" },
+        "no-hardcoded-location": { "level": "off" }
+      }
+    }
+  }
+}`,
+     why:`<code>bicepconfig.json</code> applies to every Bicep file in its folder and below. With rules at <code>error</code>, <code>az bicep build</code> or <code>az bicep lint</code> in the pipeline fails the run, so problems are caught in the pull request instead of in Azure.`},
+    {id:"te3", type:"order", title:"Order the test stages",
+     q:`Put these IaC checks in the order a pipeline should run them (cheapest and fastest first).`,
+     items:[
+       "Lint and build the Bicep files",
+       "Static analysis with PSRule for Azure",
+       "Preflight validation with az deployment group validate",
+       "what-if against the target resource group",
+       "Deploy to a temporary test environment",
+       "Run smoke tests against the deployed resources"
+     ],
+     hint:`Start with checks that need nothing but the files; end with checks that need real resources.`,
+     why:`Fail fast: linting and static analysis need no Azure access and run in seconds. Validation and what-if talk to Resource Manager but deploy nothing. Only then do you spend time and money deploying and testing real resources.`},
+    {id:"te4", type:"multi", title:"validate and what-if",
+     q:`Which statements are true? <i>Select all that apply.</i>`,
+     options:[
+       "what-if doesn't create, change or delete any resources",
+       "A what-if result with no errors guarantees that the deployment will succeed",
+       "In incremental mode, resources missing from the template show up as Ignore",
+       "validate runs preflight checks but doesn't list the resource changes",
+       "ARM TTK can test .bicep files directly without building them",
+       "PSRule for Azure can run in Azure Pipelines and GitHub Actions"
+     ], answer:[0,2,3,5],
+     hint:`Two statements overpromise; one mixes up which tool reads which format.`,
+     why:`what-if and validate only ask Resource Manager; neither deploys. A deployment can still fail later (for example, on quota or a runtime conflict), so what-if is not a guarantee. ARM TTK tests JSON, so you build Bicep first; PSRule for Azure reads Bicep and has pipeline and GitHub Actions integrations.`}
+  ]
+},
+/* ================================================================ 7 */
+{
+  group:"Pipelines & state",
+  title:"Terraform state & workflow",
+  tag:"init · plan · apply · state · azurerm backend",
+  intro:`Terraform is the most likely non-Microsoft tool on the exam. The key differences from Bicep are the <b>state file</b> and the <b>plan/apply</b> workflow.`,
+  sections:[
+    {h:"The workflow", lang:"sh", code:`terraform init                    # download providers, connect to the backend
+terraform fmt -check              # formatting (fails on unformatted files)
+terraform validate                # syntax and internal consistency
+terraform plan -out=tfplan        # compare code + state + real resources, save the plan
+terraform apply tfplan            # apply exactly the reviewed plan
+terraform destroy                 # remove everything in the state`},
+    {h:"State and remote backends", p:`State maps your resources to real Azure objects. A team must share one state, so it lives in a <b>remote backend</b>, typically an Azure Storage blob. The <code>azurerm</code> backend supports <b>state locking</b> (through blob leases) so two runs can't change the same state at once. Use one state file per environment (a different <code>key</code>), never commit <code>*.tfstate</code> to Git, and protect the storage account: state can contain secrets.`,
+     lang:"hcl", code:`terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-tfstate"
+    storage_account_name = "sttfstatecontoso"
+    container_name       = "tfstate"
+    key                  = "prod.terraform.tfstate"
+    use_azuread_auth     = true   # Entra ID instead of storage account keys
+  }
+}`},
+    {h:"Drift detection", p:`<code>terraform plan -detailed-exitcode</code> returns <b>0</b> when there are no changes, <b>1</b> on error and <b>2</b> when there are changes. A scheduled pipeline that runs it against production is a simple drift detector.`}
+  ],
+  tip:`Exam patterns: "team shares Terraform state" → <b>azurerm backend in a storage account</b> (with locking). "Apply exactly what was reviewed" → <code>plan -out</code> then <code>apply &lt;planfile&gt;</code>. "State contains secrets" → restrict access to the storage account, don't commit state.`,
+  exercises:[
+    {id:"tf1", type:"order", title:"A Terraform pipeline",
+     q:`Order the steps of a Terraform deployment pipeline.`,
+     items:[
+       "terraform init (connects to the azurerm backend)",
+       "terraform validate",
+       "terraform plan -out=tfplan",
+       "A reviewer approves the plan (environment approval)",
+       "terraform apply tfplan"
+     ],
+     hint:`Nothing works before init; apply uses the saved plan.`,
+     why:`<code>init</code> prepares providers and the backend, <code>validate</code> checks the code, <code>plan -out</code> saves the change set, an approval gate lets a human review it, and <code>apply tfplan</code> applies exactly that plan without recalculating it.`},
+    {id:"tf2", type:"text", lang:"hcl", title:"Configure the remote backend",
+     q:`Write the <code>terraform</code> block that stores state in Azure Storage:
+      <ul class="tips">
+        <li>resource group <code>rg-tfstate</code>, storage account <code>sttfstatecontoso</code>, container <code>tfstate</code></li>
+        <li>state file name <code>prod.terraform.tfstate</code></li>
+        <li>authenticate with <b>Entra ID</b>, not an access key</li>
+      </ul>`,
+     starter:`terraform {
+
+}`,
+     checks:[
+       {l:"backend \"azurerm\" block inside terraform { }", t:a => /terraform\s*\{[\s\S]*backend\s+"azurerm"\s*\{/.test(a.src)},
+       {l:"resource_group_name = \"rg-tfstate\"", t:a => /\bresource_group_name\s*=\s*"rg-tfstate"/.test(a.src)},
+       {l:"storage_account_name = \"sttfstatecontoso\"", t:a => /\bstorage_account_name\s*=\s*"sttfstatecontoso"/.test(a.src)},
+       {l:"container_name = \"tfstate\"", t:a => /\bcontainer_name\s*=\s*"tfstate"/.test(a.src)},
+       {l:"key = \"prod.terraform.tfstate\"", t:a => /\bkey\s*=\s*"prod\.terraform\.tfstate"/.test(a.src)},
+       {l:"use_azuread_auth = true", t:a => /\buse_azuread_auth\s*=\s*true\b/.test(a.src)},
+       {l:"No access_key in the file", t:a => !/\baccess_key\s*=/.test(a.src)},
+       {l:"Braces are balanced", t:a => (a.src.match(/\{/g) || []).length === (a.src.match(/\}/g) || []).length}
+     ],
+     hint:`The backend type is <code>azurerm</code> (in quotes). Four location settings plus one authentication flag.`,
+     solution:`terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-tfstate"
+    storage_account_name = "sttfstatecontoso"
+    container_name       = "tfstate"
+    key                  = "prod.terraform.tfstate"
+    use_azuread_auth     = true
+  }
+}`,
+     why:`The <code>azurerm</code> backend keeps state in a blob and locks it during runs. The <code>key</code> is the blob name, so a different key per environment keeps states separate. <code>use_azuread_auth = true</code> uses the pipeline's Entra ID identity (it needs a data-plane role such as Storage Blob Data Contributor) instead of a storage key that someone has to store and rotate.`},
+    {id:"tf3", type:"multi", title:"Handling state",
+     q:`Which statements about Terraform state are correct? <i>Select all that apply.</i>`,
+     options:[
+       "Commit terraform.tfstate to Git so everyone has the latest version",
+       "The azurerm backend locks the state so two pipeline runs can't apply at the same time",
+       "State can contain sensitive values, so restrict access to the storage account",
+       "Local state on each developer's laptop is fine for a team",
+       "Use a different backend key (or workspace) per environment",
+       "Deleting the state file also deletes the Azure resources"
+     ], answer:[1,2,4],
+     hint:`State must be shared, locked, separated per environment and protected.`,
+     why:`Shared remote state with locking avoids lost updates and corruption; a key per environment avoids one change touching all of them; and because state includes attribute values (sometimes secrets), it belongs in a locked-down storage account, not in Git. Losing state doesn't delete resources: Terraform just forgets them (you'd have to import them again).`},
+    {id:"tf4", type:"mc", title:"Nightly drift check",
+     q:`A scheduled pipeline should fail (and alert) only when production no longer matches the Terraform code. Which command gives a clear signal?`,
+     options:[
+       "<code>terraform validate</code>, which fails when resources changed",
+       "<code>terraform plan -detailed-exitcode</code>, and treat exit code 2 as drift",
+       "<code>terraform apply -auto-approve</code> every night",
+       "<code>terraform fmt -check</code>"
+     ], answer:1,
+     hint:`You need a comparison with reality, and an exit code that distinguishes "changes" from "error".`,
+     why:`With <code>-detailed-exitcode</code>, plan returns 0 (no changes), 1 (error) or 2 (changes present). Exit code 2 means code and reality differ. <code>validate</code> and <code>fmt</code> never look at Azure, and a blind nightly apply hides drift instead of reporting it.`}
+  ]
+},
+/* ================================================================ 8 */
+{
+  group:"Pipelines & state",
+  title:"Deploying IaC from pipelines",
+  tag:"Azure Pipelines · GitHub Actions · OIDC · approvals",
+  intro:`In a mature setup, no person deploys infrastructure by hand: a pipeline does, using a federated identity, with what-if before and approvals in front of production.`,
+  sections:[
+    {h:"Azure Pipelines", lang:"yaml", code:`- task: AzureResourceManagerTemplateDeployment@3   # deploys ARM JSON or Bicep
+  inputs:
+    deploymentScope: Resource Group
+    azureResourceManagerConnection: sc-prod         # service connection (workload identity federation)
+    subscriptionId: $(subscriptionId)
+    action: Create Or Update Resource Group
+    resourceGroupName: rg-web
+    location: West Europe
+    templateLocation: Linked artifact
+    csmFile: infra/main.bicep
+    csmParametersFile: infra/prod.bicepparam
+    deploymentMode: Incremental                     # Incremental | Complete | Validation
+
+- task: AzureCLI@2                                  # any az command, e.g. what-if or stacks
+  inputs:
+    azureSubscription: sc-prod
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: az deployment group what-if -g rg-web -f infra/main.bicep -p infra/prod.bicepparam`,
+     after:`<p>Put production deployments in a <b>deployment job</b> that targets an <b>environment</b> (approvals and checks live there). Deployment jobs don't check out the repository automatically, so add <code>- checkout: self</code>. Terraform runs through a Marketplace extension's tasks or plain script steps.</p>`},
+    {h:"GitHub Actions", lang:"yaml", code:`permissions:
+  id-token: write        # lets the job request an OIDC token for azure/login
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production          # required reviewers, branch rules, env secrets
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: \${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: \${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: \${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/arm-deploy@v2
+        with:
+          resourceGroupName: rg-web
+          template: ./infra/main.bicep
+          parameters: ./infra/prod.bicepparam
+          deploymentMode: Incremental`,
+     after:`<p>With OIDC there's no client secret: the app registration or user-assigned managed identity has a <b>federated credential</b> that trusts this repository (for example, subject <code>repo:contoso/web:environment:production</code>). Instead of <code>azure/arm-deploy</code> you can also <code>run: az deployment group create …</code> after logging in.</p>`}
+  ],
+  tip:`Secure pipeline identity → <b>workload identity federation / OIDC</b> (no secrets to rotate), scoped with <b>least privilege</b> to the target resource group. Human gate before production → <b>environment approvals</b> (Azure Pipelines) or <b>required reviewers</b> (GitHub environments). The ARM task's <code>deploymentMode: Validation</code> only validates.`,
+  exercises:[
+    {id:"pl1", type:"text", lang:"yaml", title:"Add the production stage",
+     q:`The pipeline below already has a <code>Preview</code> stage. Add a stage <code>Deploy</code> that:
+      <ul class="tips">
+        <li>depends on <code>Preview</code></li>
+        <li>uses a <b>deployment job</b> that targets environment <code>prod</code> with the <code>runOnce</code> strategy</li>
+        <li>checks out the repository, then runs <code>AzureResourceManagerTemplateDeployment@3</code> with service connection <code>sc-prod</code>, resource group <code>rg-web</code>, template <code>infra/main.bicep</code>, parameters <code>infra/prod.bicepparam</code> and mode <code>Incremental</code></li>
+      </ul>`,
+     starter:`trigger:
+  - main
+
+stages:
+  - stage: Preview
+    jobs:
+      - job: WhatIf
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: sc-prod
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: az deployment group what-if -g rg-web -f infra/main.bicep -p infra/prod.bicepparam
+`,
+     checks:[
+       {l:"The Preview stage with the what-if step is still there", t:a => a.item("stages",{stage:"Preview"}) && a.item("**steps",{task:/^AzureCLI@2$/i,"inputs.inlineScript":/what-if/})},
+       {l:"A Deploy stage that depends on Preview", t:a => a.item("stages",{stage:"Deploy",dependsOn:/^Preview$/i}) || a.item("stages",{stage:"Deploy","dependsOn[]":/^Preview$/i})},
+       {l:"A deployment job targeting environment prod", t:a => a.item("stages",{stage:"Deploy","jobs[].deployment":/\S/}) && (a.h("stages[].jobs[].environment",/^prod$/i) || a.h("stages[].jobs[].environment.name",/^prod$/i))},
+       {l:"strategy runOnce → deploy → steps", t:a => a.h("stages[].jobs[].strategy.runOnce.deploy.steps[].*")},
+       {l:"checkout: self inside the deploy steps", t:a => a.h("**runOnce.deploy.steps[].checkout","self")},
+       {l:"AzureResourceManagerTemplateDeployment@3 with connection sc-prod and resource group rg-web", t:a => ["inputs.azureResourceManagerConnection","inputs.ConnectedServiceName"].some(k => a.item("**runOnce.deploy.steps",{task:/^AzureResourceManagerTemplateDeployment@3$/i,[k]:/^sc-prod$/i,"inputs.resourceGroupName":/^rg-web$/i}))},
+       {l:"…csmFile infra/main.bicep and csmParametersFile infra/prod.bicepparam", t:a => a.item("**runOnce.deploy.steps",{task:/^AzureResourceManagerTemplateDeployment@3$/i,"inputs.csmFile":/^(\$\(\w+(\.\w+)*\)\/)?infra\/main\.bicep$/i,"inputs.csmParametersFile":/^(\$\(\w+(\.\w+)*\)\/)?infra\/prod\.bicepparam$/i})},
+       {l:"…deploymentMode Incremental", t:a => a.item("**runOnce.deploy.steps",{task:/^AzureResourceManagerTemplateDeployment@3$/i,"inputs.deploymentMode":"Incremental"})},
+       {l:"checkout comes before the deployment task", t:a => a.first("**runOnce.deploy.steps[].checkout") < a.first("**runOnce.deploy.steps[].task",/^AzureResourceManagerTemplateDeployment/i)}
+     ],
+     hint:`Structure: <code>- stage: Deploy</code> → <code>dependsOn</code> + <code>jobs</code> → <code>- deployment: …</code> with <code>environment</code> and <code>strategy: runOnce: deploy: steps:</code>.`,
+     solution:`trigger:
+  - main
+
+stages:
+  - stage: Preview
+    jobs:
+      - job: WhatIf
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: sc-prod
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: az deployment group what-if -g rg-web -f infra/main.bicep -p infra/prod.bicepparam
+
+  - stage: Deploy
+    dependsOn: Preview
+    jobs:
+      - deployment: DeployInfra
+        environment: prod
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: AzureResourceManagerTemplateDeployment@3
+                  inputs:
+                    deploymentScope: Resource Group
+                    azureResourceManagerConnection: sc-prod
+                    subscriptionId: $(subscriptionId)
+                    action: Create Or Update Resource Group
+                    resourceGroupName: rg-web
+                    location: West Europe
+                    templateLocation: Linked artifact
+                    csmFile: infra/main.bicep
+                    csmParametersFile: infra/prod.bicepparam
+                    deploymentMode: Incremental`,
+     why:`The deployment job ties the run to the <code>prod</code> environment, so any approvals and checks configured there pause the stage until someone reviews the what-if output from the Preview stage. Deployment jobs skip the automatic checkout, which is why <code>checkout: self</code> is needed before the template can be found.`},
+    {id:"pl2", type:"text", lang:"yaml", title:"Deploy Bicep from GitHub Actions with OIDC",
+     q:`Complete the workflow. It must:
+      <ul class="tips">
+        <li>allow the job to request an OIDC token, and read the repository contents</li>
+        <li>have one job <code>deploy</code> on <code>ubuntu-latest</code> that uses the <code>production</code> environment</li>
+        <li>check out the code, log in with <code>azure/login@v2</code> using the secrets <code>AZURE_CLIENT_ID</code>, <code>AZURE_TENANT_ID</code> and <code>AZURE_SUBSCRIPTION_ID</code> (no client secret)</li>
+        <li>deploy <code>infra/main.bicep</code> to resource group <code>rg-web</code>, with <code>azure/arm-deploy</code> or an <code>az deployment group create</code> run step</li>
+      </ul>`,
+     starter:`name: deploy-infra
+on:
+  push:
+    branches: [main]
+`,
+     checks:[
+       {l:"permissions: id-token: write", t:a => a.h("**permissions.id-token","write")},
+       {l:"permissions: contents: read", t:a => a.h("**permissions.contents","read")},
+       {l:"Job deploy on ubuntu-latest", t:a => a.h("jobs.deploy.runs-on",/^ubuntu-latest$/i)},
+       {l:"Job uses the production environment", t:a => a.h("jobs.deploy.environment",/^production$/i) || a.h("jobs.deploy.environment.name",/^production$/i)},
+       {l:"actions/checkout step", t:a => a.item("jobs.deploy.steps",{uses:/^actions\/checkout@/i})},
+       {l:"azure/login@v2 with client-id, tenant-id and subscription-id from secrets", t:a => a.item("jobs.deploy.steps",{uses:/^azure\/login@v2/i,"with.client-id":/secrets\.AZURE_CLIENT_ID/,"with.tenant-id":/secrets\.AZURE_TENANT_ID/,"with.subscription-id":/secrets\.AZURE_SUBSCRIPTION_ID/})},
+       {l:"No client secret or creds JSON", t:a => !a.h("jobs.deploy.steps[].with.creds") && !/client-secret|AZURE_CREDENTIALS/i.test(a.src)},
+       {l:"Deploys infra/main.bicep to rg-web", t:a => a.item("jobs.deploy.steps",{uses:/^azure\/arm-deploy@v\d/i,"with.resourceGroupName":/^rg-web$/i,"with.template":/^(\.\/)?infra\/main\.bicep$/i}) || a.item("jobs.deploy.steps",{run:/^(?=[\s\S]*az\s+deployment\s+group\s+create)(?=[\s\S]*(--resource-group|-g)\s+rg-web\b)(?=[\s\S]*(--template-file|-f)\s+(\.\/)?infra\/main\.bicep\b)/})},
+       {l:"Login comes before the deployment", t:a => a.first("jobs.deploy.steps[].uses",/^azure\/login/i) < Math.min(a.first("jobs.deploy.steps[].uses",/^azure\/arm-deploy/i), a.first("jobs.deploy.steps[].run",/az\s+deployment/))}
+     ],
+     hint:`<code>permissions</code> can be top-level or on the job. <code>environment</code> sits next to <code>runs-on</code>. <code>azure/login</code> takes <code>client-id</code>, <code>tenant-id</code> and <code>subscription-id</code> under <code>with</code>.`,
+     solution:`name: deploy-infra
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: \${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: \${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: \${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/arm-deploy@v2
+        with:
+          resourceGroupName: rg-web
+          template: ./infra/main.bicep
+          deploymentMode: Incremental`,
+     why:`<code>id-token: write</code> lets the job request a GitHub OIDC token, which <code>azure/login</code> exchanges for an Entra ID token through the federated credential, so no secret is stored. The <code>production</code> environment adds required reviewers and changes the token's subject to <code>…:environment:production</code>, which the federated credential must match.`},
+    {id:"pl3", type:"mc", title:"deploymentMode: Validation",
+     q:`In <code>AzureResourceManagerTemplateDeployment@3</code>, what does <code>deploymentMode: Validation</code> do?`,
+     options:[
+       "Deploys in incremental mode and then runs smoke tests",
+       "Validates the template and reports errors without deploying any resources",
+       "Deletes resources that aren't in the template, after asking for approval",
+       "Runs ARM TTK against the template"
+     ], answer:1,
+     hint:`It's the pipeline equivalent of a preflight check.`,
+     why:`Validation mode only validates the template; nothing is deployed. It's handy as a pull request check. Incremental and Complete are the two real deployment modes; ARM TTK is a separate PowerShell module.`},
+    {id:"pl4", type:"multi", title:"Secure the IaC pipeline",
+     q:`Which measures improve the security of a pipeline that deploys infrastructure to production? <i>Select all that apply.</i>`,
+     options:[
+       "Use workload identity federation (OIDC) instead of a client secret",
+       "Grant the pipeline identity Contributor only on the resource groups it deploys to",
+       "Store the service principal secret in the YAML file so it's versioned",
+       "Require an approval on the production environment, with the what-if output available to the approver",
+       "Give the pipeline identity Owner on the tenant root management group to avoid permission errors",
+       "Protect main with branch policies so only reviewed changes trigger production deployments"
+     ], answer:[0,1,3,5],
+     hint:`No long-lived secrets, least privilege, human gate, protected source.`,
+     why:`Federated credentials remove secrets entirely; least-privilege scope limits the damage if the pipeline is abused; environment approvals put a human in front of production; and branch protection ensures only reviewed code is deployed. Secrets in YAML and tenant-wide Owner do the opposite.`},
+    {id:"pl5", type:"lines", title:"Fix the workflow",
+     q:`Requirements: log in with OIDC, and <b>never delete</b> resources that aren't in the template. Click the <b>two</b> lines that break these requirements.`,
+     code:[
+       "permissions:",
+       "  id-token: read",
+       "  contents: read",
+       "jobs:",
+       "  deploy:",
+       "    runs-on: ubuntu-latest",
+       "    environment: production",
+       "    steps:",
+       "      - uses: actions/checkout@v4",
+       "      - uses: azure/login@v2",
+       "        with:",
+       "          client-id: ${{ secrets.AZURE_CLIENT_ID }}",
+       "          tenant-id: ${{ secrets.AZURE_TENANT_ID }}",
+       "          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+       "      - uses: azure/arm-deploy@v2",
+       "        with:",
+       "          resourceGroupName: rg-web",
+       "          template: ./infra/main.bicep",
+       "          deploymentMode: Complete"
+     ], answer:[1,18],
+     hint:`One permission is too weak to request a token; one setting deletes things.`,
+     why:`Requesting an OIDC token needs <code>id-token: write</code>; with <code>read</code> (or no setting), azure/login can't get a token. <code>deploymentMode: Complete</code> deletes every resource in <code>rg-web</code> that the template doesn't define. Use <code>Incremental</code> (the default), and a deployment stack if you want controlled deletes.`}
+  ]
+},
+
+/* ================================================================ 9 */
+{
+  group:"Desired state configuration",
+  title:"Azure Automation State Configuration",
+  tag:"PowerShell DSC · node configurations · pull server · compliance",
+  intro:`<b>Azure Automation State Configuration</b> is a managed <b>DSC pull server</b>: you upload PowerShell DSC configurations, Azure compiles them, machines pull their configuration and report compliance. It is still in the exam objectives, but Microsoft has announced that it <b>retires on 30 September 2027</b> and recommends moving to <b>Azure Machine Configuration</b> (next module).`,
+  sections:[
+    {h:"A DSC configuration", lang:"ps", code:`Configuration WebServer {
+    Import-DscResource -ModuleName PSDesiredStateConfiguration
+
+    Node 'localhost' {
+        WindowsFeature IIS {
+            Ensure = 'Present'
+            Name   = 'Web-Server'
+        }
+        Service W3SVC {
+            Name        = 'W3SVC'
+            State       = 'Running'
+            StartupType = 'Automatic'
+            DependsOn   = '[WindowsFeature]IIS'
+        }
+    }
+}`, after:`<p>A <b>configuration</b> is the PowerShell script. <b>Compiling</b> it produces a <b>node configuration</b> (a MOF document) per node block, named <code>ConfigurationName.NodeName</code>, here <code>WebServer.localhost</code>. On each machine the <b>Local Configuration Manager (LCM)</b> applies it.</p>`},
+    {h:"The workflow in Azure Automation", lang:"text", code:`1 Import the configuration      Import-AzAutomationDscConfiguration -SourcePath .\\WebServer.ps1 -Published …
+2 Compile it                    Start-AzAutomationDscCompilationJob -ConfigurationName WebServer …
+3 Onboard (register) nodes      Azure VMs (DSC extension), on-premises / other clouds (DSC metaconfiguration),
+                                e.g. Register-AzAutomationDscNode …
+4 Assign a node configuration   e.g. WebServer.localhost
+5 The LCM pulls and applies it  at its refresh / configuration-mode interval
+6 Review compliance             per node: Compliant, Not compliant, Failed, … (and send reports to Log Analytics)`},
+    {h:"LCM configuration modes", after:`<div class="tablewrap"><table class="ref">
+<tr><th>ConfigurationMode</th><th>Behaviour</th></tr>
+<tr><td><b>ApplyOnly</b></td><td>Apply once; don't check again</td></tr>
+<tr><td><b>ApplyAndMonitor</b></td><td>Apply, then report drift without fixing it</td></tr>
+<tr><td><b>ApplyAndAutoCorrect</b></td><td>Apply, then fix drift automatically</td></tr>
+</table></div>`}
+  ],
+  tip:`Know the vocabulary: <b>configuration</b> (script) → <b>compile</b> → <b>node configuration</b> (MOF) → <b>node</b> (registered machine) → <b>compliance</b>. For new designs, prefer <b>Machine Configuration</b>; Automation State Configuration retires on 30 September 2027.`,
+  exercises:[
+    {id:"dsc1", type:"order", title:"From script to compliant server",
+     q:`Order the steps for managing a VM with Azure Automation State Configuration.`,
+     items:[
+       "Write the DSC configuration script",
+       "Import the configuration into the Automation account",
+       "Compile it into node configurations",
+       "Register (onboard) the VM as a DSC node",
+       "Assign a node configuration to the node",
+       "The LCM pulls and applies the configuration, then compliance is reported"
+     ],
+     hint:`A node can only receive a node configuration that has already been compiled.`,
+     why:`Configuration → import → compile (MOF node configurations) → onboard the node → assign → the LCM pulls, applies and reports. Onboarding and compiling are independent of each other, but both must happen before the assignment.`},
+    {id:"dsc2", type:"text", lang:"ps", title:"Write a DSC configuration",
+     q:`Write a DSC configuration named <code>WebServer</code> for node <code>localhost</code> that:
+      <ul class="tips">
+        <li>imports the <code>PSDesiredStateConfiguration</code> module</li>
+        <li>ensures the Windows feature <code>Web-Server</code> is present (resource name of your choice)</li>
+        <li>ensures service <code>W3SVC</code> is <code>Running</code>, and depends on the Windows feature resource</li>
+      </ul>`,
+     starter:`Configuration WebServer {
+
+}`,
+     checks:[
+       {l:"Configuration WebServer { … }", t:a => /^\s*Configuration\s+WebServer\s*\{/im.test(a.src)},
+       {l:"Import-DscResource -ModuleName PSDesiredStateConfiguration", t:a => /Import-DscResource\s+-ModuleName\s+['"]?PSDesiredStateConfiguration['"]?/i.test(a.src)},
+       {l:"A Node 'localhost' block", t:a => /\bNode\s+['"]?localhost['"]?\s*\{/i.test(a.src)},
+       {l:"WindowsFeature resource with Name = 'Web-Server'", t:a => /\bWindowsFeature\s+\w+\s*\{[^}]*\bName\s*=\s*['"]Web-Server['"]/i.test(a.src)},
+       {l:"…and Ensure = 'Present'", t:a => /\bWindowsFeature\s+\w+\s*\{[^}]*\bEnsure\s*=\s*['"]Present['"]/i.test(a.src)},
+       {l:"Service resource with Name = 'W3SVC' and State = 'Running'", t:a => /\bService\s+\w+\s*\{[^}]*\bName\s*=\s*['"]W3SVC['"]/i.test(a.src) && /\bService\s+\w+\s*\{[^}]*\bState\s*=\s*['"]Running['"]/i.test(a.src)},
+       {l:"Service DependsOn = '[WindowsFeature]<your resource name>'", t:a => { const m = a.src.match(/\bWindowsFeature\s+(\w+)\s*\{/i); return !!m && new RegExp("\\bService\\s+\\w+\\s*\\{[^}]*\\bDependsOn\\s*=\\s*@?\\(?\\s*['\"]\\[WindowsFeature\\]" + m[1] + "['\"]", "i").test(a.src); }},
+       {l:"Braces are balanced", t:a => (a.src.match(/\{/g) || []).length === (a.src.match(/\}/g) || []).length}
+     ],
+     hint:`Each resource block is <code>ResourceType Name { Property = 'value' }</code>. <code>DependsOn</code> uses the format <code>'[ResourceType]ResourceName'</code>.`,
+     solution:`Configuration WebServer {
+    Import-DscResource -ModuleName PSDesiredStateConfiguration
+
+    Node 'localhost' {
+        WindowsFeature IIS {
+            Ensure = 'Present'
+            Name   = 'Web-Server'
+        }
+        Service W3SVC {
+            Name        = 'W3SVC'
+            State       = 'Running'
+            StartupType = 'Automatic'
+            DependsOn   = '[WindowsFeature]IIS'
+        }
+    }
+}`,
+     why:`DSC is declarative: you state <code>Ensure = 'Present'</code> and <code>State = 'Running'</code>, and the resources work out whether anything must change, which makes repeated runs idempotent. <code>DependsOn</code> orders the resources so the service isn't checked before IIS is installed. The same configuration style is the input for Machine Configuration packages.`},
+    {id:"dsc3", type:"match", title:"LCM configuration modes",
+     q:`Which <code>ConfigurationMode</code> matches each requirement?`,
+     choices:["ApplyOnly","ApplyAndMonitor","ApplyAndAutoCorrect"],
+     rows:[
+       ["Fix drift automatically, for example when someone stops the service","ApplyAndAutoCorrect"],
+       ["Apply the configuration, then only <b>report</b> drift so an engineer can investigate","ApplyAndMonitor"],
+       ["Apply the configuration once and never check it again","ApplyOnly"]
+     ],
+     hint:`The names say exactly what happens after the first apply.`,
+     why:`ApplyOnly stops after the first successful apply; ApplyAndMonitor keeps checking and reports non-compliance; ApplyAndAutoCorrect also re-applies the configuration to correct drift. Machine Configuration has the same three ideas as assignment types: Audit, ApplyAndMonitor, ApplyAndAutoCorrect.`},
+    {id:"dsc4", type:"fill", title:"Name the pieces",
+     q:`Configuration <code>WebServer</code> contains the node blocks <code>localhost</code> and <code>Proxy</code>. Fill in the blanks.`,
+     tpl:`Compiling it produces two [[0]] configurations in MOF format.<br>
+The one for the first node is named [[1]].<br>
+On each machine, the [[2]] (three-word name) applies the configuration.<br>
+Azure Automation State Configuration retires on 30 September [[3]].`,
+     blanks:[["node"],["WebServer.localhost"],["Local Configuration Manager","LCM"],["2027"]],
+     hint:`ConfigurationName.NodeName. The agent built into Windows PowerShell DSC is the L… C… M….`,
+     why:`Node configurations are named <code>&lt;Configuration&gt;.&lt;Node&gt;</code>, and the Local Configuration Manager is the DSC engine on each node. With the retirement in September 2027, new work should target Azure Machine Configuration.`},
+    {id:"dsc5", type:"mc", title:"Starting a new project",
+     q:`In late 2026, a team starts a new project to enforce security baselines inside 300 Azure VMs and 50 on-premises servers, with compliance visible in Azure. Which service should they build on?`,
+     options:[
+       "Azure Automation State Configuration, because it's in the exam objectives",
+       "Azure Machine Configuration through Azure Policy, with on-premises servers connected through Azure Arc",
+       "A scheduled Azure CLI script that logs in to each VM",
+       "ARM templates in complete mode"
+     ], answer:1,
+     hint:`Which service is the announced successor, and how do non-Azure machines join it?`,
+     why:`Automation State Configuration retires on 30 September 2027, and Microsoft points to Azure Machine Configuration as the replacement. Machine Configuration reports through Azure Policy and works for Azure Arc-enabled servers too. ARM templates manage resources, not settings inside the OS.`}
+  ]
+},
+/* ================================================================ 10 */
+{
+  group:"Desired state configuration",
+  title:"Azure Machine Configuration",
+  tag:"Azure Policy · guest assignments · Arc · audit & apply",
+  intro:`<b>Azure Machine Configuration</b> (formerly <i>Azure Policy Guest Configuration</i>, for a while branded <i>Azure Automanage Machine Configuration</i>) is the Azure Policy feature that <b>audits and applies settings inside machines</b>: Azure VMs and Azure Arc-enabled servers, Windows and Linux.`,
+  sections:[
+    {h:"How it works", lang:"text", code:`Azure Policy definition (machine configuration)
+   │  AuditIfNotExists  → report only
+   │  DeployIfNotExists → create a guest configuration assignment (apply)
+   ▼
+guestConfigurationAssignment on the machine  (Microsoft.GuestConfiguration/guestConfigurationAssignments)
+   ▼
+machine configuration agent inside the OS
+   Azure VM:   machine configuration extension + system-assigned managed identity
+   Arc server: built into the Azure Connected Machine agent
+   ▼
+compliance results → Azure Policy compliance (and Azure Resource Graph)`},
+    {h:"Assignment types", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Type</th><th>Behaviour</th></tr>
+<tr><td><b>Audit</b></td><td>Only report on the state of the machine</td></tr>
+<tr><td><b>ApplyAndMonitor</b></td><td>Apply the configuration, then monitor and report drift</td></tr>
+<tr><td><b>ApplyAndAutoCorrect</b></td><td>Apply the configuration and bring the machine back into conformance when drift occurs</td></tr>
+</table></div>
+<p>Microsoft provides the built-in initiative <i>Deploy prerequisites to enable Guest Configuration policies on virtual machines</i>, which adds the system-assigned identity and the extension. Like every <code>DeployIfNotExists</code> policy, existing non-compliant machines need a <b>remediation task</b>.</p>`},
+    {h:"Custom configurations", lang:"text", code:`1 Write a DSC configuration and compile it to a MOF
+2 New-GuestConfigurationPackage    → .zip package (Type Audit or AuditAndSet)   [GuestConfiguration module]
+3 Test it locally                  Get-GuestConfigurationPackageComplianceStatus / Start-GuestConfigurationPackageRemediation
+4 Upload the .zip to storage        (e.g. a blob the machines can reach)
+5 New-GuestConfigurationPolicy     → policy definition JSON (with the content URI and hash)
+6 Create + assign the policy        New-AzPolicyDefinition / New-AzPolicyAssignment, remediation task for existing machines`}
+  ],
+  tip:`"Audit or enforce settings <b>inside</b> VMs (Azure, on-premises, other clouds) and see compliance in Azure Policy" → <b>Machine Configuration</b> (+ <b>Azure Arc</b> for non-Azure machines). Azure VM prerequisites: <b>extension + system-assigned managed identity</b>. Existing machines and DeployIfNotExists → <b>remediation task</b>.`,
+  exercises:[
+    {id:"mcf1", type:"multi", title:"Prerequisites on an Azure VM",
+     q:`You assign a built-in Machine Configuration policy to a subscription. What does each <b>Azure VM</b> need for it to report compliance? <i>Select all that apply.</i>`,
+     options:[
+       "The machine configuration (Guest Configuration) extension",
+       "A system-assigned managed identity",
+       "Registration as a node in an Azure Automation account",
+       "A DSC pull server URL in its LCM settings",
+       "A public IP address"
+     ], answer:[0,1],
+     hint:`Microsoft has a built-in initiative that deploys exactly these prerequisites.`,
+     why:`The extension runs the agent inside the VM, and the system-assigned managed identity lets it talk to the service. Automation accounts and pull servers belong to the older Automation State Configuration. On Azure Arc-enabled servers, the agent is part of the Connected Machine agent.`},
+    {id:"mcf2", type:"match", title:"Choose the assignment type",
+     q:`Match each requirement to the Machine Configuration assignment type.`,
+     choices:["Audit","ApplyAndMonitor","ApplyAndAutoCorrect"],
+     rows:[
+       ["Security wants a report of servers where TLS 1.0 is enabled, without changing anything","Audit"],
+       ["Apply the time zone setting, and if someone changes it later, set it back automatically","ApplyAndAutoCorrect"],
+       ["Apply the baseline once, then report drift but let operators decide how to fix it","ApplyAndMonitor"]
+     ],
+     hint:`Report only · apply + report · apply + fix.`,
+     why:`Audit only reports; ApplyAndMonitor applies once and then reports drift; ApplyAndAutoCorrect applies and corrects drift. Audit uses AuditIfNotExists policies; the apply types are deployed through DeployIfNotExists policies.`},
+    {id:"mcf3", type:"order", title:"Ship a custom configuration",
+     q:`Order the steps to enforce a custom setting with Machine Configuration.`,
+     items:[
+       "Write a DSC configuration and compile it to a MOF",
+       "Create the package with New-GuestConfigurationPackage",
+       "Test the package locally for compliance and remediation",
+       "Upload the package .zip to a storage location the machines can reach",
+       "Generate the policy definition with New-GuestConfigurationPolicy",
+       "Publish and assign the policy, then run a remediation task for existing machines"
+     ],
+     hint:`Package → test → publish the content → describe it in a policy → assign.`,
+     why:`The GuestConfiguration PowerShell module turns a compiled DSC configuration into a package, lets you test it locally, and generates a policy definition that points to the uploaded package (with its hash). Assigning the policy creates guest assignments; a remediation task covers machines that existed before the assignment.`},
+    {id:"mcf4", type:"mc", title:"Existing VMs stay non-compliant",
+     q:`You assigned a DeployIfNotExists Machine Configuration policy (ApplyAndAutoCorrect). New VMs get the setting, but the 120 VMs that already existed show as non-compliant and nothing is applied to them. What do you do?`,
+     options:[
+       "Delete and recreate the VMs",
+       "Create a remediation task for the policy assignment",
+       "Change the assignment type to Audit",
+       "Restart the Azure Policy service"
+     ], answer:1,
+     hint:`How does Azure Policy handle resources that existed before a DeployIfNotExists assignment?`,
+     why:`DeployIfNotExists policies act automatically on resources that are created or updated. For existing resources, you start a <b>remediation task</b> (the assignment's managed identity then deploys the guest assignment). Switching to Audit would only report the problem.`}
+  ]
+},
+/* ================================================================ 11 */
+{
+  group:"Self-service",
+  title:"Azure Deployment Environments",
+  tag:"dev centers · projects · catalogs · environment definitions & types",
+  intro:`<b>Azure Deployment Environments</b> (ADE) lets developers spin up approved infrastructure on demand, from templates the platform team curates, without needing access to the subscriptions themselves.`,
+  sections:[
+    {h:"Key concepts", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Concept</th><th>What it is</th></tr>
+<tr><td><b>Dev center</b></td><td>Top-level resource: a collection of projects that need similar settings. Holds catalogs and environment types (shared with Microsoft Dev Box).</td></tr>
+<tr><td><b>Catalog</b></td><td>A GitHub or Azure DevOps Services (Azure Repos) repository with environment definitions</td></tr>
+<tr><td><b>Environment definition</b></td><td>An IaC template plus an <code>environment.yaml</code> manifest. ARM and Bicep run natively; Terraform, Pulumi and others through custom container images.</td></tr>
+<tr><td><b>Environment type</b></td><td>A category such as Dev, Test, Sandbox or Prod, defined on the dev center</td></tr>
+<tr><td><b>Project</b></td><td>Belongs to exactly one dev center; usually one per team or app</td></tr>
+<tr><td><b>Project environment type</b></td><td>Enables an environment type for a project and sets the <b>target subscription</b>, the <b>managed identity</b> used for deployment and the <b>access</b> developers get to the created resources</td></tr>
+<tr><td><b>Environment</b></td><td>A deployed instance: one environment definition + one environment type, created by a developer</td></tr>
+</table></div>
+<p>Roles: <b>DevCenter Project Admin</b> manages a project's environment types; <b>Deployment Environments User</b> lets developers create environments; <b>Deployment Environments Reader</b> gives read access. Developers create environments in the <b>developer portal</b>, with the <b>Azure CLI</b> (devcenter extension) or the <b>Azure Developer CLI</b>.</p>`},
+    {h:"An environment definition", file:"catalog/Environments/WebApp/environment.yaml", lang:"yaml", code:`name: WebApp
+summary: App Service plan and web app
+description: Deploys a Linux App Service plan and a web app for testing
+runner: ARM                    # ARM or Bicep sample runners; or a custom container image
+templatePath: azuredeploy.json
+parameters:
+  - id: appName
+    name: App name
+    description: Name of the web app
+    type: string
+    required: true
+  - id: sku
+    name: SKU
+    type: string
+    default: B1
+    required: false`},
+    {h:"Status note", p:`Microsoft Learn currently shows a notice that Azure Deployment Environments <b>retires on 22 February 2027</b>. It is still listed in the AZ-400 skills outline, so learn the concepts for the exam, and check the current guidance before you start a real project with it.`}
+  ],
+  tip:`"Developers need self-service, on-demand environments from approved templates, deployed to subscriptions they can't access directly, with governance per environment type" → <b>Azure Deployment Environments</b>. Target subscription and deployment identity → <b>project environment type</b>. Developer role → <b>Deployment Environments User</b>.`,
+  exercises:[
+    {id:"ade1", type:"match", title:"ADE vocabulary",
+     q:`Match each description to the ADE concept.`,
+     choices:["Dev center","Catalog","Environment definition","Environment type","Project environment type","Environment"],
+     rows:[
+       ["A Git repository (GitHub or Azure Repos) that holds the templates","Catalog"],
+       ["A Bicep or ARM template plus its environment.yaml manifest","Environment definition"],
+       ["Dev, Test or Prod as categories, defined once for the organization","Environment type"],
+       ["For project <i>Payments</i>, Dev deploys to subscription <i>sub-dev</i> using a specific managed identity","Project environment type"],
+       ["The top-level resource that groups projects with similar settings","Dev center"],
+       ["What a developer creates in the developer portal: running resources from one definition","Environment"]
+     ],
+     hint:`Repository → template → category → per-project mapping → container → instance.`,
+     why:`The dev center contains catalogs and environment types; each project enables environment types and maps them to a subscription, identity and access level; a developer then combines a definition and a type to create an environment.`},
+    {id:"ade2", type:"text", lang:"yaml", title:"Write environment.yaml",
+     q:`Write the manifest for an environment definition:
+      <ul class="tips">
+        <li><code>name</code> <code>FunctionApp</code>, plus a <code>summary</code> and a <code>description</code></li>
+        <li>an ARM template <code>azuredeploy.json</code> in the same folder, run by the built-in <code>ARM</code> runner</li>
+        <li>a required <code>string</code> parameter with id <code>functionAppName</code> (with a <code>name</code>)</li>
+        <li>an optional <code>string</code> parameter with id <code>region</code>, default <code>westeurope</code></li>
+      </ul>`,
+     starter:`# environment.yaml
+`,
+     checks:[
+       {l:"name: FunctionApp", t:a => a.h("name",/^FunctionApp$/)},
+       {l:"summary and description", t:a => a.h("summary",/\S/) && a.h("description",/\S/)},
+       {l:"runner: ARM", t:a => a.h("runner",/^ARM$/i)},
+       {l:"templatePath: azuredeploy.json", t:a => a.h("templatePath",/^(\.\/)?azuredeploy\.json$/)},
+       {l:"Required string parameter functionAppName with a name", t:a => a.item("parameters",{id:"functionAppName",type:"string",required:"true",name:/\S/})},
+       {l:"Optional string parameter region with default westeurope", t:a => a.item("parameters",{id:"region",type:"string",default:"westeurope"}) && !a.item("parameters",{id:"region",required:"true"})}
+     ],
+     hint:`Top-level keys: <code>name</code>, <code>summary</code>, <code>description</code>, <code>runner</code>, <code>templatePath</code>, <code>parameters</code>. <code>parameters</code> is a list; each item starts with <code>- id: …</code>.`,
+     solution:`name: FunctionApp
+summary: Function app with storage
+description: Deploys a function app, its storage account and Application Insights
+runner: ARM
+templatePath: azuredeploy.json
+parameters:
+  - id: functionAppName
+    name: Function app name
+    type: string
+    required: true
+  - id: region
+    name: Region
+    type: string
+    default: westeurope
+    required: false`,
+     why:`The manifest tells ADE which runner to use and where the template is, and it describes the parameters that the developer portal asks for. Parameter <code>id</code>s must match the template's parameter names. For Bicep you'd use the <code>Bicep</code> runner; Terraform needs a custom container image as the runner.`},
+    {id:"ade3", type:"order", title:"Set up ADE",
+     q:`Order the platform team's setup steps, ending with the developer's first environment.`,
+     items:[
+       "Create a dev center (with a managed identity)",
+       "Attach a catalog repository with environment definitions",
+       "Create environment types such as Dev and Test on the dev center",
+       "Create a project for the team",
+       "Configure project environment types: target subscription, deployment identity and creator access",
+       "Give developers the Deployment Environments User role on the project",
+       "A developer creates an environment in the developer portal"
+     ],
+     hint:`Dev center-level things first, then the project, then the per-project mapping, then people.`,
+     why:`Catalogs and environment types live on the dev center. A project enables some of those types (each mapped to a subscription and identity). Developers with Deployment Environments User on the project can then create environments without any direct rights on the target subscription.`},
+    {id:"ade4", type:"mc", title:"Least privilege for developers",
+     q:`Developers on project <i>Payments</i> should be able to create and delete their own environments, but not change the project's environment types. Which role do you assign on the project?`,
+     options:["DevCenter Owner","DevCenter Project Admin","Deployment Environments User","Contributor on the target subscription"], answer:2,
+     hint:`One built-in role is made exactly for developers who create environments.`,
+     why:`Deployment Environments User lets developers create environments based on the access they've been given. DevCenter Project Admin can also manage the project's environment types, and Contributor on the subscription bypasses ADE's governance entirely.`},
+    {id:"ade5", type:"mc", title:"Where does it deploy?",
+     q:`Environments of type <b>Test</b> for project <i>Payments</i> must be created in subscription <i>sub-payments-test</i>, deployed by a specific managed identity, and developers should get Contributor on the created resources. Where do you configure this?`,
+     options:[
+       "In environment.yaml of each environment definition",
+       "On the project environment type (Test) of the Payments project",
+       "On the catalog connection",
+       "In the developer portal, each time a developer creates an environment"
+     ], answer:1,
+     hint:`The setting is per project and per environment type.`,
+     why:`A project environment type maps an environment type to a target subscription, the deployment identity and the role developers receive on the resources they create. That keeps environment definitions reusable across projects and subscriptions.`}
+  ]
+},
+/* ================================================================ 12 */
+{
+  group:"Review",
+  title:"Mixed scenarios",
+  tag:"exam-style scenarios across the whole theme",
+  intro:`These scenarios mix everything in this lab, the way the exam does. Read for the deciding phrase: <i>multi-cloud</i>, <i>inside the VM</i>, <i>delete what's removed</i>, <i>self-service</i>, <i>no secrets</i>.`,
+  sections:[
+    {h:"Quick decision table", lang:"text", code:`Need                                                     Answer
+Azure-only, declarative, no state file                   Bicep
+Several clouds, one workflow                             Terraform (remote state in Azure Storage)
+Agentless OS configuration over SSH                      Ansible
+Preview changes before deploying                         what-if / terraform plan
+Delete resources removed from the template + protect     Deployment stack (deleteResources, denyDelete/denyWriteAndDelete)
+Share versioned templates/modules with RBAC              Template specs / private Bicep registry
+Best-practice checks in CI                               Bicep linter, PSRule for Azure, ARM TTK
+Settings inside VMs (Azure + on-premises), compliance    Machine Configuration + Azure Arc
+Legacy DSC pull server                                   Automation State Configuration (retires 30 Sep 2027)
+Self-service environments from approved templates        Azure Deployment Environments
+Pipeline identity without secrets                        Workload identity federation / OIDC`}
+  ],
+  tip:`When two answers both work, the exam usually wants the one that is <b>built in</b>, <b>declarative</b>, <b>enforced</b> (not just a convention) and needs the <b>least administrative effort</b>.`,
+  exercises:[
+    {id:"rv1", type:"mc", title:"Two clouds",
+     q:`Fabrikam runs its front end on Azure and its data platform on AWS. The platform team wants one IaC language, a reviewed change plan before every deployment, and shared state for 12 engineers. What do you recommend?`,
+     options:[
+       "Bicep with deployment stacks",
+       "Terraform with an azurerm remote backend and plan files reviewed in the pipeline",
+       "ARM templates plus AWS CloudFormation, one per cloud",
+       "Azure CLI scripts with if-exists checks"
+     ], answer:1,
+     hint:`Which tool covers both clouds and has a plan/apply workflow with shared state?`,
+     why:`Terraform providers cover Azure and AWS with one language; <code>plan -out</code> gives a reviewable change set; and a remote backend in Azure Storage gives shared, locked state. Bicep and ARM are Azure-only, and two tools means two skill sets and two workflows.`},
+    {id:"rv2", type:"mc", title:"Clean up and lock down",
+     q:`A pipeline deploys a landing zone that spans several resource groups in one subscription. Resources removed from the Bicep code must be deleted automatically, and administrators must not be able to delete the deployed resources in the portal. Least effort?`,
+     options:[
+       "Deploy each resource group in complete mode and add a CanNotDelete lock by hand",
+       "Deploy the Bicep file as a subscription-scoped deployment stack with --action-on-unmanage deleteResources (or deleteAll) and --deny-settings-mode denyDelete",
+       "Run a nightly script that compares the portal with the code and deletes extras",
+       "Use template specs"
+     ], answer:1,
+     hint:`One feature tracks the managed resources across resource groups and can deny deletes.`,
+     why:`A deployment stack at subscription scope manages resources across resource groups, deletes what you remove from the code according to <code>--action-on-unmanage</code>, and applies deny assignments with deny settings. Complete mode can't span resource groups from one deployment, is not recommended, and manual locks are extra work.`},
+    {id:"rv3", type:"multi", title:"Baseline for hybrid servers",
+     q:`TLS 1.0 must be disabled on all Windows servers, in Azure and on-premises; drift must be corrected automatically and compliance shown in Azure Policy. Which components do you use? <i>Select all that apply.</i>`,
+     options:[
+       "Azure Arc for the on-premises servers",
+       "A Machine Configuration package built from a DSC configuration",
+       "A policy assignment with assignment type ApplyAndAutoCorrect (DeployIfNotExists)",
+       "A remediation task for servers that existed before the assignment",
+       "Bicep in complete mode",
+       "A new Azure Automation account with State Configuration"
+     ], answer:[0,1,2,3],
+     hint:`Settings inside the OS, hybrid, auto-correct, existing machines.`,
+     why:`Arc makes the on-premises servers Azure resources; a custom Machine Configuration package carries the setting; ApplyAndAutoCorrect enforces it; and a remediation task covers existing machines. Bicep doesn't configure the OS, and Automation State Configuration is retiring in September 2027.`},
+    {id:"rv4", type:"mc", title:"Sandboxes on demand",
+     q:`Developers often wait days for a test environment. They should create an approved web app + database environment themselves in minutes, deployed into a dedicated test subscription they have no direct access to. What do you set up?`,
+     options:[
+       "Give every developer Contributor on the test subscription and share the Bicep file",
+       "Azure Deployment Environments: a catalog with the environment definition, a Test environment type mapped to the test subscription, and the Deployment Environments User role for developers",
+       "A template spec with Reader access",
+       "A Machine Configuration policy"
+     ], answer:1,
+     hint:`Self-service, curated templates, governed target subscription.`,
+     why:`ADE is built for this: platform engineers curate definitions in a catalog and map environment types to subscriptions and identities, and developers self-serve within those guardrails. Contributor access removes the guardrails; a template spec still needs deploy rights on the target.`},
+    {id:"rv5", type:"order", title:"A change, end to end",
+     q:`Order the life of one infrastructure change.`,
+     items:[
+       "Create a branch and edit main.bicep and prod.bicepparam",
+       "Open a pull request: the linter and PSRule for Azure run",
+       "what-if runs and its output is posted to the pull request",
+       "Reviewers approve and the pull request is merged into main",
+       "The pipeline deploys to dev and test",
+       "An approver releases the production stage and the pipeline deploys to prod"
+     ],
+     hint:`Branch → PR checks → preview → merge → lower environments → gated production.`,
+     why:`This combines the IaC strategy (Git, pull requests), testing (linter, PSRule, what-if) and deployment (pipeline, environments with approvals). Nobody touches production directly, so code stays the source of truth.`},
+    {id:"rv6", type:"match", title:"Pick the technology",
+     q:`Match each scenario to the best answer.`,
+     choices:["Bicep what-if","Template spec","PSRule for Azure","Machine Configuration","Terraform remote backend","Workload identity federation"],
+     rows:[
+       ["A reviewer must see which resources a change will modify or delete before approving","Bicep what-if"],
+       ["Several teams must deploy the same approved, versioned VM template, with RBAC on who can use it","Template spec"],
+       ["The CI pipeline should fail when a storage account allows TLS 1.0, based on Well-Architected rules","PSRule for Azure"],
+       ["Audit the local administrators group membership on all servers","Machine Configuration"],
+       ["Two engineers ran terraform apply at the same time and corrupted the state","Terraform remote backend"],
+       ["The service principal's client secret expired and broke every deployment","Workload identity federation"]
+     ],
+     hint:`Preview · share · static checks · inside the OS · shared locked state · no secrets.`,
+     why:`what-if previews changes; template specs share versioned templates with RBAC; PSRule for Azure checks templates against WAF-based rules; Machine Configuration audits OS settings; a remote backend gives shared state with locking; and federated credentials remove client secrets that expire.`}
+  ]
+}
+];
+
+
+/* ===================================================================
+   MINI YAML PARSER (same as the Pipelines lab)
+   Turns YAML into a flat list of { path, value } entries, e.g.
+     body[0].type = textarea
+   =================================================================== */
+const toStr = t => t.reduce((s, x) => x[0] === "[" ? s + x : (s ? s + "." + x : x), "");
+
+function cleanVal(v){
+  v = (v || "").trim();
+  if (v[0] === "'"){ const m = v.match(/^'((?:[^']|'')*)'/); if (m) return m[1].replace(/''/g, "'"); }
+  if (v[0] === '"'){ const m = v.match(/^"((?:[^"\\]|\\.)*)"/); if (m) return m[1]; }
+  const ci = v.search(/(^|\s)#/);
+  return (ci >= 0 ? v.slice(0, ci) : v).trim();
+}
+
+function splitFlow(inner){
+  const out = []; let cur = "", depth = 0, q = null;
+  for (const ch of inner){
+    if (q){ cur += ch; if (ch === q) q = null; continue; }
+    if (ch === "'" || ch === '"'){ q = ch; cur += ch; continue; }
+    if ("[{(".includes(ch)) depth++;
+    if ("]})".includes(ch)) depth--;
+    if (ch === "," && depth === 0){ out.push(cur); cur = ""; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur);
+  return out.map(s => s.trim()).filter(Boolean);
+}
+
+function parseYaml(text){
+  const lines = text.replace(/\r/g, "").split("\n");
+  const entries = [], errors = [];
+  const root = {col:-1, gt:[], it:[], kids:null};
+  const stack = [root], counters = new Map();
+  const top = () => stack[stack.length - 1];
+  const add = (gt, it, value, line) => entries.push({gt, it, gen:toStr(gt), idx:toStr(it), value, line});
+  let flagged = -1;
+  const sibling = (parent, col, ln, kind) => {
+    if (parent.kind && parent.kind !== kind && flagged !== ln){
+      flagged = ln;
+      errors.push(`Line ${ln}: this ${kind === "list" ? "list item" : "key"} sits at the same level as ${kind === "list" ? "keys" : "\"- \" list items"} under the same parent. Check the indentation.`);
+    }
+    parent.kind = parent.kind || kind;
+    if (parent.kids === null) parent.kids = col;
+    else if (parent.kids !== col && flagged !== ln)
+      errors.push(`Line ${ln}: indented ${col} spaces, but its siblings use ${parent.kids}. Items at the same level must line up exactly.`);
+  };
+  let lastScalar = null;
+
+  for (let i = 0; i < lines.length; i++){
+    const raw = lines[i], ln = i + 1;
+    if (!raw.trim() || /^\s*#/.test(raw)) continue;
+    if (/^ *\t/.test(raw)){ errors.push(`Line ${ln}: a tab is used for indentation. YAML only allows spaces.`); continue; }
+    const lineCol = raw.match(/^ */)[0].length;
+    let col = lineCol, rest = raw.slice(col).replace(/\s+$/, "");
+    if (lastScalar && col > lastScalar.col && (flagged = ln))
+      errors.push(`Line ${ln}: indented under "${lastScalar.key}" (line ${lastScalar.ln}), but that key already has a value on its own line.`);
+    lastScalar = null;
+
+    let dashNode = null;
+    while (/^-(\s|$)/.test(rest)){
+      while (stack.length > 1 && (top().col > col || (top().dash && top().col === col))) stack.pop();
+      const parent = top();
+      sibling(parent, col, ln, "list");
+      const n = counters.get(parent) ?? 0; counters.set(parent, n + 1);
+      dashNode = {col, gt:[...parent.gt, "[]"], it:[...parent.it, `[${n}]`], kids:null, dash:true};
+      stack.push(dashNode);
+      const m = rest.match(/^-\s*/)[0].length;
+      col += m; rest = rest.slice(m);
+    }
+    if (!rest) continue;
+
+    const km = /^['"]/.test(rest) ? null : rest.match(/^(.+?)\s*:(?:\s+(.*))?$/);
+    if (!km){
+      if (dashNode) add(dashNode.gt, dashNode.it, cleanVal(rest), ln);
+      else errors.push(`Line ${ln}: "${rest.slice(0, 40)}" is not a "key: value" pair or a "- item". Check for a missing colon or a missing space after it.`);
+      continue;
+    }
+
+    const key = cleanVal(km[1]) || km[1];
+    while (stack.length > 1 && top().col >= col) stack.pop();
+    const parent = top();
+    sibling(parent, col, ln, "map");
+    const gt = [...parent.gt, key], it = [...parent.it, key];
+    const rawVal = (km[2] || "").trim();
+
+    if (/^[|>][-+]?\d*\s*(#.*)?$/.test(rawVal)){
+      const body = []; let j = i + 1;
+      for (; j < lines.length; j++){
+        const l = lines[j];
+        if (!l.trim()){ body.push(""); continue; }
+        if (l.match(/^ */)[0].length > lineCol) body.push(l); else break;
+      }
+      while (body.length && !body[body.length - 1].trim()) body.pop();
+      const ind = body.filter(x => x.trim()).map(x => x.match(/^ */)[0].length);
+      const min = ind.length ? Math.min(...ind) : 0;
+      if (!body.length) errors.push(`Line ${ln}: "${key}: ${rawVal}" starts a multi-line block, but no indented lines follow.`);
+      add(gt, it, body.map(x => x.slice(min)).join("\n"), ln);
+      i = j - 1;
+      continue;
+    }
+
+    const quoted = /^['"]/.test(rawVal);
+    const v = cleanVal(rawVal);
+    if (v === "" && !quoted){
+      stack.push({col, gt, it, kids:null});
+      add(gt, it, "", ln);
+    } else if (!quoted && /^\[.*\]$/.test(v)){
+      add(gt, it, "", ln);
+      splitFlow(v.slice(1, -1)).forEach((x, k) => add([...gt, "[]"], [...it, `[${k}]`], cleanVal(x), ln));
+      lastScalar = {col, key, ln};
+    } else if (!quoted && /^\{.*\}$/.test(v)){
+      add(gt, it, "", ln);
+      splitFlow(v.slice(1, -1)).forEach(pair => {
+        const pm = pair.match(/^(.+?)\s*:\s*(.*)$/);
+        if (pm) add([...gt, cleanVal(pm[1])], [...it, cleanVal(pm[1])], cleanVal(pm[2]), ln);
+      });
+      lastScalar = {col, key, ln};
+    } else {
+      add(gt, it, v, ln);
+      lastScalar = {col, key, ln};
+    }
+  }
+  return {entries, errors};
+}
+
+function globRe(p){
+  if (p instanceof RegExp) return p;
+  return new RegExp("^" + p.split(/(\*\*|\*|\[\]\?)/).map(s =>
+    s === "**" ? ".*" :
+    s === "*" ? "[^.\\[\\]]*" :
+    s === "[]?" ? "(\\[\\])?" :
+    s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("") + "$", "i");
+}
+const valMatch = (v, w) => w === undefined ? true : w instanceof RegExp ? w.test(v) : String(v).toLowerCase() === String(w).toLowerCase();
+
+function makeApi(entries, src){
+  const find = (p, w) => { const re = globRe(p); return entries.filter(e => re.test(e.gen) && valMatch(e.value, w)); };
+  return {
+    src,
+    h: (p, w) => find(p, w).length > 0,
+    count: (p, w) => find(p, w).length,
+    first: (p, w) => Math.min(Infinity, ...find(p, w).map(e => e.line)),
+    item(listPath, conds){
+      const re = globRe(listPath + "[]"), groups = new Map();
+      for (const e of entries){
+        for (let n = 1; n <= e.gt.length; n++){
+          if (e.gt[n - 1] !== "[]" || !re.test(toStr(e.gt.slice(0, n)))) continue;
+          const k = toStr(e.it.slice(0, n));
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push({rel:toStr(e.gt.slice(n)), value:e.value});
+        }
+      }
+      return [...groups.values()].some(list =>
+        Object.entries(conds).every(([rp, w]) => { const r = globRe(rp); return list.some(x => r.test(x.rel) && valMatch(x.value, w)); }));
+    }
+  };
+}
+
+/* Tokenizes shell / PowerShell commands into {words, flags}. Line continuations (\ or `) are joined.
+   run(prefix, {"--flag|-f": regex|string|null(present)|false(absent)}) → true if one command matches. */
+function parseCli(src){
+  const text = String(src).replace(/\r/g, "").replace(/[ \t]+(\\|`)[ \t]*\n/g, " ");
+  const cmds = [];
+  for (const raw of text.split("\n")){
+    const toks = [], re = /"([^"]*)"|'([^']*)'|(\S+)/g; let m;
+    while ((m = re.exec(raw))){
+      if (m[3] !== undefined && m[3].startsWith("#")) break;
+      toks.push(m[3] !== undefined ? {t:m[3], q:false} : {t:m[1] !== undefined ? m[1] : m[2], q:true});
+    }
+    if (!toks.length) continue;
+    const words = [], flags = {}; let cur = null;
+    for (const {t, q} of toks){
+      if (!q && /^--?[A-Za-z]/.test(t)){
+        let name = t, val;
+        const eq = t.indexOf("=");
+        if (t.startsWith("--") && eq > 0){ name = t.slice(0, eq); val = t.slice(eq + 1); }
+        name = name.toLowerCase();
+        cur = flags[name] = flags[name] || [];
+        if (val !== undefined) cur.push(val);
+      } else if (cur) cur.push(t);
+      else words.push(t.toLowerCase());
+    }
+    cmds.push({words:words.join(" "), flags});
+  }
+  return cmds;
+}
+function cliApi(src){
+  const cmds = parseCli(src);
+  const run = (prefix, conds = {}) => cmds.some(c =>
+    (c.words + " ").startsWith(prefix.toLowerCase() + " ") &&
+    Object.entries(conds).every(([names, w]) => {
+      const ns = names.split("|").map(n => n.toLowerCase());
+      const present = ns.some(n => c.flags[n]);
+      if (w === false) return !present;
+      if (w === null || w === true) return present;
+      return present && ns.flatMap(n => c.flags[n] || []).some(v => valMatch(v, w));
+    }));
+  return {cmds, run};
+}
+
+/* ===================================================================
+   CHECKING (pure functions, no DOM: also used by the self-test)
+   =================================================================== */
+const norm = s => String(s).trim().replace(/\s+/g, " ").toLowerCase();
+const sameSet = (a, b) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
+
+// Returns {ok, results:[{l, ok, sub?}], marks}  (marks drive per-item coloring)
+function grade(ex, ans){
+  switch (ex.type){
+    case "mc": {
+      const ok = ans === ex.answer;
+      return {ok, results:[{l: ans === null || ans === undefined ? "Pick an answer first." : ok ? "Correct!" : "Not quite. Read the hint and try again.", ok}]};
+    }
+    case "multi": {
+      const sel = ans || [];
+      const missing = ex.answer.filter(i => !sel.includes(i)).length;
+      const extra = sel.filter(i => !ex.answer.includes(i)).length;
+      const ok = missing === 0 && extra === 0;
+      const r = [];
+      if (ok) r.push({l:"Correct! You found exactly the right options.", ok:true});
+      else {
+        r.push({l: missing ? `${missing} correct option${missing > 1 ? "s" : ""} not selected` : "All correct options selected", ok: !missing});
+        r.push({l: extra ? `${extra} selected option${extra > 1 ? "s are" : " is"} wrong` : "No wrong options selected", ok: !extra});
+      }
+      return {ok, results:r};
+    }
+    case "order": {
+      const seq = ans || [];
+      const marks = seq.map((it, pos) => it === pos);
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.items.length;
+      return {ok, marks, results:[{l: ok ? "Correct order!" : `${right}/${ex.items.length} items are in the right position.`, ok}]};
+    }
+    case "match": {
+      const sel = ans || [];
+      const marks = ex.rows.map((r, i) => sel[i] === r[1]);
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.rows.length;
+      return {ok, marks, results:[{l: ok ? "All matches correct!" : `${right}/${ex.rows.length} matches correct.`, ok}]};
+    }
+    case "fill": {
+      const vals = ans || [];
+      const marks = ex.blanks.map((acc, i) => acc.some(a => norm(a) === norm(vals[i] || "")));
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.blanks.length;
+      return {ok, marks, results:[{l: ok ? "All blanks correct!" : `${right}/${ex.blanks.length} blanks correct.`, ok}]};
+    }
+    case "lines": {
+      const sel = ans || [];
+      const missing = ex.answer.filter(i => !sel.includes(i)).length;
+      const extra = sel.filter(i => !ex.answer.includes(i)).length;
+      const ok = missing === 0 && extra === 0;
+      const r = ok ? [{l:"Correct! You spotted exactly the right lines.", ok:true}] : [
+        {l: missing ? `${missing} line${missing > 1 ? "s" : ""} still to find` : "You found every faulty line", ok: !missing},
+        {l: extra ? `${extra} selected line${extra > 1 ? "s are" : " is"} actually fine` : "No correct lines selected by mistake", ok: !extra}];
+      return {ok, results:r};
+    }
+    case "text": {
+      const text = String(ans || "").replace(/\r/g, "");
+      const results = [];
+      let api;
+      if (ex.lang === "yaml"){
+        const p = parseYaml(text);
+        results.push({l:"Valid YAML structure: spaces only, aligned siblings, key: value pairs", ok: p.errors.length === 0 && p.entries.length > 0, sub:p.errors});
+        api = makeApi(p.entries, text.replace(/^\s*#.*$/gm, ""));
+      } else if (ex.lang === "json"){
+        let json = null, err = "";
+        try { json = JSON.parse(text); } catch (e) { err = e.message; }
+        const okJson = json !== null && typeof json === "object";
+        results.push({l:"Valid JSON", ok: okJson, sub: err ? [err] : []});
+        api = {src:text, json: okJson ? json : null, lines:text.split("\n")};
+      } else {
+        const lines = text.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#") && !l.startsWith("//"));
+        api = {src:text, lines, ...cliApi(text)};
+      }
+      for (const c of ex.checks){
+        let ok = false;
+        try { ok = !!c.t(api); } catch (e) { ok = false; }
+        results.push({l:c.l, ok});
+      }
+      return {ok: results.every(r => r.ok), results};
+    }
+  }
+  return {ok:false, results:[]};
+}
+
+// The model answer for each exercise, in the same shape grade() expects.
+function modelAnswer(ex){
+  switch (ex.type){
+    case "mc": return ex.answer;
+    case "multi": case "lines": return ex.answer.slice();
+    case "order": return ex.items.map((_, i) => i);
+    case "match": return ex.rows.map(r => r[1]);
+    case "fill": return ex.blanks.map(b => b[0]);
+    case "text": return ex.solution;
+  }
+}
+
+// Deterministic shuffle so the starting order is stable between visits.
+function scramble(id, n){
+  let seed = 0; for (const ch of id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  if (a.every((v, i) => v === i)) a.reverse();
+  return a;
+}
+
+const ALL_EX = MODULES.flatMap(m => m.exercises);
+
+/* ===================================================================
+   HIGHLIGHTER (tiny, dependency-free)
+   =================================================================== */
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function commentAt(v){
+  let q = null;
+  for (let i = 0; i < v.length; i++){
+    const ch = v[i];
+    if (q){ if (ch === q) q = null; continue; }
+    if ((ch === "'" || ch === '"') && (i === 0 || /\s/.test(v[i - 1]))){ q = ch; continue; }
+    if (ch === "#" && (i === 0 || /\s/.test(v[i - 1]))) return i;
+  }
+  return -1;
+}
+function hlValue(v){
+  const ci = commentAt(v);
+  const body = ci >= 0 ? v.slice(0, ci) : v, comment = ci >= 0 ? v.slice(ci) : "";
+  const t = body.trim();
+  let out;
+  if (/^(['"]).*\1$/.test(t)) out = `<span class="ts">${esc(body)}</span>`;
+  else if (/^[|>][-+]?\d*$/.test(t)) out = `<span class="tk">${esc(body)}</span>`;
+  else if (/^(true|false|none|null|~|-?\d+(\.\d+)?)$/i.test(t)) out = `<span class="tn">${esc(body)}</span>`;
+  else out = esc(body);
+  return out + (comment ? `<span class="tc">${esc(comment)}</span>` : "");
+}
+function hlYaml(code){
+  let blockCol = -1;
+  return code.split("\n").map(line => {
+    const ind = line.match(/^ */)[0].length;
+    if (blockCol >= 0){
+      if (!line.trim() || ind > blockCol) return esc(line);
+      blockCol = -1;
+    }
+    const [, sp, dash, rest] = line.match(/^(\s*)((?:-\s+|-$)*)(.*)$/);
+    if (rest.startsWith("#")) return esc(sp + dash) + `<span class="tc">${esc(rest)}</span>`;
+    let out = esc(sp) + (dash ? `<span class="tdash">${esc(dash)}</span>` : "");
+    const km = /^['"]/.test(rest) ? null : rest.match(/^(.+?)(\s*:)(\s+.*)?$/);
+    if (km){
+      out += `<span class="tk">${esc(km[1])}</span>${esc(km[2])}`;
+      if (km[3]){
+        const lead = km[3].match(/^\s*/)[0], val = km[3].slice(lead.length);
+        out += lead + hlValue(val);
+        if (/^[|>][-+]?\d*\s*(#.*)?$/.test(val.trim())) blockCol = ind;
+      }
+    } else out += hlValue(rest);
+    return out;
+  }).join("\n");
+}
+function hlSh(code){
+  return code.split("\n").map(line => {
+    const m = line.match(/^(\s*)(#.*)$/);
+    if (m) return esc(m[1]) + `<span class="tc">${esc(m[2])}</span>`;
+    const ci = line.search(/\s#\s/);
+    const body = ci >= 0 ? line.slice(0, ci) : line, c = ci >= 0 ? line.slice(ci) : "";
+    return esc(body).replace(/^(\s*)(git|gh)\b/, '$1<span class="tk">$2</span>').replace(/(\s)(--?[\w-]+)/g, '$1<span class="tt">$2</span>')
+      + (c ? `<span class="tc">${esc(c)}</span>` : "");
+  }).join("\n");
+}
+function hlText(code){
+  // highlight AB#123, #123, @mentions and trailing comments in plain text blocks
+  return code.split("\n").map(line => {
+    const ci = line.search(/\s{2,}(?=\S)/);
+    const body = ci >= 0 ? line.slice(0, ci) : line, rest = ci >= 0 ? line.slice(ci) : "";
+    const h = s => esc(s).replace(/(AB#\d+|(?:^|(?<=\s))[!#]\d+|@[\w-]+(?:\/[\w-]+)?)/g, '<span class="td">$1</span>');
+    return h(body) + (rest ? `<span class="tc">${esc(rest)}</span>` : "");
+  }).join("\n");
+}
+const HL = {
+  bicep:{c:/\/\/.*/y, kw:/^(param|var|resource|module|output|targetScope|using|existing|if|for|in|true|false|null|import|type|metadata)$/},
+  hcl:{c:/#.*/y, kw:/^(terraform|backend|provider|resource|data|variable|output|locals|module|true|false)$/},
+  ps:{c:/#.*/y, kw:/^(configuration|node|import-dscresource|windowsfeature|service|param)$/i, flags:true},
+  sh:{c:/#.*/y, kw:/^(az|terraform|bicep|new-azresourcegroupdeployment|test-aztemplate)$/i, flags:true},
+  json:{c:null, kw:/^(true|false|null)$/}
+};
+function hlCode(code, lang){
+  const L = HL[lang] || HL.sh;
+  const span = (c, s) => `<span class="${c}">${esc(s)}</span>`;
+  return code.split("\n").map(line => {
+    let out = "", i = 0;
+    while (i < line.length){
+      const ch = line[i], prev = i ? line[i - 1] : " ";
+      if (L.c && (lang === "bicep" || /\s/.test(prev))){
+        L.c.lastIndex = i; const m = L.c.exec(line);
+        if (m){ out += span("tc", m[0]); break; }
+      }
+      if (ch === "'" || ch === '"'){
+        let j = i + 1; while (j < line.length && line[j] !== ch){ if (line[j] === "\\" && lang !== "ps") j++; j++; }
+        const s = line.slice(i, j + 1);
+        out += span(lang === "json" && /^\s*:/.test(line.slice(j + 1)) ? "tk" : "ts", s); i = j + 1; continue;
+      }
+      const w = /[\s(\[{,=:]/.test(prev) || i === 0 ? line.slice(i).match(/^(-{0,2}[A-Za-z_@$][\w.@$-]*|\d+(\.\d+)*\b)/) : null;
+      if (w){
+        const t = w[0];
+        out += L.kw.test(t) ? span("tk", t) : (L.flags && /^-/.test(t)) ? span("tt", t) : /^\d/.test(t) ? span("tn", t) : /^@/.test(t) ? span("td", t) : esc(t);
+        i += t.length; continue;
+      }
+      out += esc(ch); i++;
+    }
+    return out;
+  }).join("\n");
+}
+function highlight(code, lang){
+  if (lang === "text") return hlText(code);
+  if (!lang || lang === "yaml") return hlYaml(code);
+  return hlCode(code, lang);
+}
+function codeBlock(code, lang){
+  return `<div class="codewrap"><pre><code>${highlight(code, lang || "yaml")}</code></pre><button class="copy">Copy</button></div>`;
+}
+
+/* ===================================================================
+   UI
+   =================================================================== */
+const KIND = {mc:"Single choice", multi:"Select all that apply", order:"Put in order", match:"Match", fill:"Fill in the blanks", lines:"Spot the error", text:"Write it"};
+
+function startApp(){
+  const store = {
+    get(k, d){ try { const v = localStorage.getItem("iacLab:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v){ try { localStorage.setItem("iacLab:" + k, JSON.stringify(v)); } catch {} }
+  };
+  let done = store.get("done", []).filter(id => ALL_EX.some(e => e.id === id));
+  let current = Math.min(store.get("current", 0), MODULES.length - 1);
+  const $ = s => document.querySelector(s);
+  const state = {};   // exercise id → current answer
+  const modDone = m => m.exercises.filter(e => done.includes(e.id)).length;
+
+  function renderNav(){
+    let html = "", lastGroup = "";
+    MODULES.forEach((m, i) => {
+      if (m.group !== lastGroup){ html += `<div class="group">${m.group}</div>`; lastGroup = m.group; }
+      const n = modDone(m), all = n === m.exercises.length;
+      const cls = [i === current ? "active" : "", all ? "done" : ""].join(" ");
+      html += `<button class="${cls}" data-i="${i}"><span class="num">${all ? "✓" : i + 1}</span>${m.title}<span class="cnt">${n}/${m.exercises.length}</span></button>`;
+    });
+    $("#nav").innerHTML = html;
+    $("#bar").style.width = (done.length / ALL_EX.length * 100) + "%";
+    $("#ptext").textContent = `${done.length} of ${ALL_EX.length} exercises completed`;
+  }
+
+  /* ---------- per-type input rendering ---------- */
+  function bodyHtml(ex){
+    const sid = ex.id;
+    switch (ex.type){
+      case "mc": case "multi":
+        return `<div class="opts">${ex.options.map((o, i) =>
+          `<label class="opt" data-i="${i}"><input type="${ex.type === "mc" ? "radio" : "checkbox"}" name="${sid}" value="${i}"><span>${o}</span></label>`).join("")}</div>`;
+      case "order":
+        return `<ol class="order" id="ol-${sid}"></ol>`;
+      case "match":
+        return `<table class="match">${ex.rows.map((r, i) =>
+          `<tr data-i="${i}"><td>${r[0]}</td><td><select aria-label="Answer ${i + 1}"><option value="">— choose —</option>${ex.choices.map(c => `<option>${esc(c)}</option>`).join("")}</select></td></tr>`).join("")}</table>`;
+      case "fill": {
+        let k = 0;
+        const html = ex.tpl.replace(/\[\[(\d+)\]\]/g, (_, n) => {
+          const w = Math.max(6, ...ex.blanks[+n].map(b => b.length)) + 2;
+          k++; return `<input data-b="${n}" size="${w}" aria-label="Blank ${+n + 1}" autocomplete="off" spellcheck="false">`;
+        });
+        return `<div class="fill${ex.mono ? " mono" : ""}">${html}</div>`;
+      }
+      case "lines":
+        return `<div class="lines${ex.prose ? " prose" : ""}">${ex.code.map((l, i) =>
+          `<div class="ln" data-i="${i}" role="button" tabindex="0"><span class="no">${i + 1}</span><span>${esc(l) || " "}</span></div>`).join("")}</div>`;
+      case "text":
+        return `<textarea class="${ex.lang === "sh" ? "short" : ""}" spellcheck="false" aria-label="Answer editor"></textarea>
+          <p class="edhelp">Tab / Shift+Tab indent by 2 spaces · Enter keeps the indentation · Ctrl+Enter checks your answer · your draft is saved automatically</p>`;
+    }
+  }
+
+  function solutionHtml(ex){
+    switch (ex.type){
+      case "mc": return `<p><b>Answer:</b> ${ex.options[ex.answer]}</p>`;
+      case "multi": return `<ul class="tips">${ex.answer.map(i => `<li>${ex.options[i]}</li>`).join("")}</ul>`;
+      case "order": return `<ol class="tips">${ex.items.map(t => `<li>${t}</li>`).join("")}</ol>`;
+      case "match": return `<div class="tablewrap"><table class="ref">${ex.rows.map(r => `<tr><td>${r[0]}</td><td><b>${esc(r[1])}</b></td></tr>`).join("")}</table></div>`;
+      case "fill": {
+        const html = ex.tpl.replace(/\[\[(\d+)\]\]/g, (_, n) => `<b><u>${esc(ex.blanks[+n][0])}</u></b>`);
+        return `<div class="fill${ex.mono ? " mono" : ""}">${html}</div>`;
+      }
+      case "lines": return `<p>Faulty line${ex.answer.length > 1 ? "s" : ""}: ${ex.answer.map(i => `<b>${i + 1}</b>`).join(", ")}</p>`;
+      case "text": return codeBlock(ex.solution, ex.lang);
+    }
+  }
+
+  function wireExercise(ex, root){
+    const id = ex.id;
+    const q = s => root.querySelector(s);
+    const draftKey = "draft:" + id;
+
+    if (ex.type === "mc"){
+      root.querySelectorAll("input").forEach(inp => inp.onchange = () => { state[id] = +inp.value; clearMarks(); });
+      state[id] = null;
+    }
+    if (ex.type === "multi"){
+      state[id] = [];
+      root.querySelectorAll("input").forEach(inp => inp.onchange = () => {
+        state[id] = [...root.querySelectorAll("input:checked")].map(x => +x.value); clearMarks();
+      });
+    }
+    if (ex.type === "order"){
+      state[id] = scramble(id, ex.items.length);
+      const ol = q(".order");
+      let dragFrom = null;
+      const draw = (marks) => {
+        ol.innerHTML = state[id].map((it, pos) =>
+          `<li draggable="true" data-pos="${pos}" class="${marks ? (marks[pos] ? "right" : "wrong") : ""}"><span class="pos">${pos + 1}</span><span class="txt">${ex.items[it]}</span>
+            <span class="mv"><button class="btn small" data-mv="-1" ${pos === 0 ? "disabled" : ""} aria-label="Move up">↑</button><button class="btn small" data-mv="1" ${pos === ex.items.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button></span></li>`).join("");
+      };
+      const move = (from, to) => {
+        const a = state[id]; const [x] = a.splice(from, 1); a.splice(to, 0, x); draw();
+      };
+      ol.onclick = e => {
+        const b = e.target.closest("button[data-mv]"); if (!b) return;
+        const pos = +b.closest("li").dataset.pos, to = pos + +b.dataset.mv;
+        if (to >= 0 && to < ex.items.length) move(pos, to);
+      };
+      ol.addEventListener("dragstart", e => { const li = e.target.closest("li"); if (li){ dragFrom = +li.dataset.pos; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", ""); } catch {} } });
+      ol.addEventListener("dragover", e => { if (dragFrom !== null) e.preventDefault(); });
+      ol.addEventListener("drop", e => { e.preventDefault(); const li = e.target.closest("li"); if (li && dragFrom !== null) move(dragFrom, +li.dataset.pos); dragFrom = null; });
+      ol.addEventListener("dragend", () => { dragFrom = null; });
+      root._draw = draw;
+      draw();
+    }
+    if (ex.type === "match"){
+      state[id] = ex.rows.map(() => "");
+      root.querySelectorAll("select").forEach((s, i) => s.onchange = () => { state[id][i] = s.value; s.closest("tr").className = ""; });
+    }
+    if (ex.type === "fill"){
+      state[id] = ex.blanks.map(() => "");
+      root.querySelectorAll(".fill input").forEach(inp => {
+        inp.oninput = () => { state[id][+inp.dataset.b] = inp.value; inp.className = ""; };
+        inp.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); check(); } };
+      });
+    }
+    if (ex.type === "lines"){
+      state[id] = [];
+      const toggle = el => {
+        const i = +el.dataset.i, a = state[id];
+        if (a.includes(i)) a.splice(a.indexOf(i), 1); else a.push(i);
+        root.querySelectorAll(".ln").forEach(l => l.className = "ln" + (a.includes(+l.dataset.i) ? " sel" : ""));
+      };
+      root.querySelectorAll(".ln").forEach(el => {
+        el.onclick = () => toggle(el);
+        el.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(el); } };
+      });
+    }
+    if (ex.type === "text"){
+      const ed = q("textarea");
+      const saved = store.get(draftKey, null);
+      ed.value = saved !== null ? saved : ex.starter;
+      state[id] = ed.value;
+      const save = () => { state[id] = ed.value; store.set(draftKey, ed.value); };
+      const insert = t => {
+        ed.focus();
+        if (!document.execCommand || !document.execCommand("insertText", false, t)){
+          const s = ed.selectionStart, en = ed.selectionEnd;
+          ed.value = ed.value.slice(0, s) + t + ed.value.slice(en);
+          ed.selectionStart = ed.selectionEnd = s + t.length;
+          save();
+        }
+      };
+      ed.addEventListener("input", save);
+      ed.addEventListener("keydown", e => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); check(); return; }
+        if (e.key === "Tab" && !e.shiftKey){ e.preventDefault(); insert("  "); return; }
+        if (e.key === "Tab" && e.shiftKey){
+          e.preventDefault();
+          const s = ed.selectionStart, ls = ed.value.lastIndexOf("\n", s - 1) + 1;
+          const n = ed.value.slice(ls, ls + 2).match(/^ {0,2}/)[0].length;
+          if (n){ ed.value = ed.value.slice(0, ls) + ed.value.slice(ls + n); ed.selectionStart = ed.selectionEnd = Math.max(ls, s - n); save(); }
+          return;
+        }
+        if (e.key === "Enter" && !e.shiftKey && !e.altKey){
+          const before = ed.value.slice(0, ed.selectionStart);
+          const line = before.slice(before.lastIndexOf("\n") + 1);
+          let ind = line.match(/^ */)[0].length;
+          const dm = line.slice(ind).match(/^(-\s+)+/);
+          if (ex.lang === "yaml"){
+            if (dm && /:/.test(line)) ind += dm[0].length;
+            if (!/^\s*#/.test(line) && /(:|:\s*[|>][-+]?)\s*$/.test(line)) ind += 2;
+          } else if (/[{(\[]\s*$/.test(line)) ind += 2;
+          e.preventDefault();
+          insert("\n" + " ".repeat(ind));
+        }
+      });
+    }
+
+    function clearMarks(){
+      root.querySelectorAll(".opt").forEach(o => o.classList.remove("right", "wrong"));
+    }
+
+    function check(){
+      const g = grade(ex, state[id]);
+      // per-item coloring
+      if (ex.type === "mc" || ex.type === "multi"){
+        clearMarks();
+        const sel = ex.type === "mc" ? (state[id] === null ? [] : [state[id]]) : state[id];
+        sel.forEach(i => root.querySelector(`.opt[data-i="${i}"]`).classList.add(
+          (ex.type === "mc" ? i === ex.answer : ex.answer.includes(i)) ? "right" : "wrong"));
+      }
+      if (ex.type === "order") root._draw(g.marks);
+      if (ex.type === "match") root.querySelectorAll(".match tr").forEach((tr, i) => tr.className = g.marks[i] ? "right" : "wrong");
+      if (ex.type === "fill") root.querySelectorAll(".fill input").forEach(inp => inp.className = g.marks[+inp.dataset.b] ? "right" : "wrong");
+      if (ex.type === "lines") root.querySelectorAll(".ln").forEach(l => {
+        const i = +l.dataset.i, sel = state[id].includes(i);
+        l.className = "ln" + (sel ? (ex.answer.includes(i) ? " right" : " wrong") : "");
+      });
+      q(".results").innerHTML = g.results.map(r =>
+        `<li class="${r.ok ? "pass" : "fail"}">${r.ok ? "✔" : "✘"} ${esc(r.l)}${(r.sub || []).map(s => `<span class="sub">↳ ${esc(s)}</span>`).join("")}</li>`).join("") +
+        (ex.type === "text" ? `<li class="${g.ok ? "pass" : "fail"}"><b>${g.results.filter(r => r.ok).length}/${g.results.length} checks passed${g.ok ? ". Nice work! 🎉" : ""}</b></li>` : "");
+      if (g.ok){
+        q(".why").style.display = "block";
+        if (!done.includes(id)){ done.push(id); store.set("done", done); renderNav(); }
+        root.classList.add("solved");
+      }
+    }
+
+    q(".checkBtn").onclick = check;
+    q(".hintBtn").onclick = () => { const h = q(".hint"); h.style.display = h.style.display === "block" ? "none" : "block"; };
+    q(".solBtn").onclick = e => {
+      const s = q(".solution"), show = s.style.display !== "block";
+      s.style.display = show ? "block" : "none";
+      q(".why").style.display = show || root.classList.contains("solved") ? "block" : "none";
+      e.target.textContent = show ? "Hide solution" : "Show solution";
+    };
+    q(".resetBtn").onclick = () => {
+      if (ex.type === "text") store.set(draftKey, null);
+      const fresh = document.createElement("section");
+      root.replaceWith(fresh);
+      buildExercise(ex, fresh);
+    };
+  }
+
+  function buildExercise(ex, el){
+    const n = ALL_EX.indexOf(ex) + 1;
+    el.className = "exercise" + (done.includes(ex.id) ? " solved" : "");
+    el.id = "ex-" + ex.id;
+    el.innerHTML = `
+      <h3>🧪 ${n}. ${ex.title} <span class="kind">${KIND[ex.type]}</span> <span class="badge">Completed</span></h3>
+      <div>${ex.q}</div>
+      ${bodyHtml(ex)}
+      <div class="btns">
+        <button class="btn primary checkBtn">Check my answer</button>
+        <button class="btn hintBtn">Hint</button>
+        <button class="btn solBtn">Show solution</button>
+        <button class="btn resetBtn">Reset</button>
+      </div>
+      <div class="hint">💡 ${ex.hint}</div>
+      <ul class="results"></ul>
+      <div class="solution"><p class="solhead">Model answer</p>${solutionHtml(ex)}</div>
+      <div class="why"><b>Why:</b> ${ex.why}</div>`;
+    wireExercise(ex, el);
+  }
+
+  function renderModule(){
+    const m = MODULES[current];
+    const sections = m.sections.map(s => `
+        <h3>${s.h}</h3>
+        ${s.p ? `<p>${s.p}</p>` : ""}
+        ${s.file ? `<div class="file">${s.file}</div>` : ""}
+        ${s.code ? codeBlock(s.code, s.lang) : ""}
+        ${s.after || ""}`).join("");
+
+    $("#content").innerHTML = `
+      <span class="tag">Module ${current + 1} of ${MODULES.length} · ${m.tag}</span>
+      <h2>${m.title}</h2>
+      <p class="lead">${m.intro}</p>
+      ${sections}
+      ${m.tip ? `<div class="note exam">🎯 <b>AZ-400 exam tip:</b> ${m.tip}</div>` : ""}
+      <h3 style="margin-top:36px">Exercises (${m.exercises.length})</h3>
+      <div id="exlist"></div>
+      <div class="navfoot">
+        <button class="btn" id="prevBtn" ${current === 0 ? "disabled" : ""}>← Previous</button>
+        <button class="btn" id="nextBtn" ${current === MODULES.length - 1 ? "disabled" : ""}>Next →</button>
+      </div>`;
+    const list = $("#exlist");
+    m.exercises.forEach(ex => { const el = document.createElement("section"); list.appendChild(el); buildExercise(ex, el); });
+    $("#prevBtn").onclick = () => go(current - 1);
+    $("#nextBtn").onclick = () => go(current + 1);
+    renderNav();
+    window.scrollTo(0, 0);
+  }
+
+  function go(i){
+    if (i < 0 || i >= MODULES.length) return;
+    current = i; store.set("current", i);
+    $("#side").classList.remove("open");
+    renderModule();
+  }
+
+  $("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(+b.dataset.i); });
+  $("#menuBtn").onclick = () => $("#side").classList.toggle("open");
+  document.addEventListener("click", e => {
+    if (!e.target.classList.contains("copy")) return;
+    const text = e.target.previousElementSibling.innerText;
+    navigator.clipboard?.writeText(text).then(() => { e.target.textContent = "Copied!"; setTimeout(() => e.target.textContent = "Copy", 1200); });
+  });
+  $("#themeBtn").onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark"; store.set("theme", root.dataset.theme);
+  };
+  $("#resetAllBtn").onclick = () => {
+    if (!confirm("Reset all progress and saved drafts for this lab?")) return;
+    done = []; store.set("done", done);
+    ALL_EX.filter(e => e.type === "text").forEach(e => store.set("draft:" + e.id, null));
+    renderModule();
+  };
+  const t = store.get("theme", null); if (t) document.documentElement.dataset.theme = t;
+
+  renderModule();
+}
+
+if (typeof document !== "undefined" && document.getElementById("content")) startApp();
+</script>
+</body>
+</html>
